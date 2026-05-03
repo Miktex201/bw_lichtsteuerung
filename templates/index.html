@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Barlicht Steuerung</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="screen">
+    <main class="control-grid">
+        <a href="{{ url_for('barlicht_innen') }}" class="big-button">
+            <span class="button-title">Barlicht innen</span>
+        </a>
+
+        <a href="{{ url_for('barlicht_aussen') }}" class="big-button">
+            <span class="button-title">Bauwagenlogo</span>
+        </a>
+
+        <a href="{{ url_for('barlicht_decke') }}" class="big-button">
+            <span class="button-title">Diskolicht Decke</span>
+        </a>
+    </main>
+
+    <form action="{{ url_for('logout') }}" method="post" class="logout-form">
+        <button type="submit" class="small-button secondary-button logout-button">Abmelden</button>
+    </form>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="screen">
+    <main class="page-grid">
+        <div class="page-panel">
+            <h1>{{ title }}</h1>
+
+            <div class="control-section">
+                <button class="control-button on-button">An</button>
+                <button class="control-button off-button">Aus</button>
+            </div>
+
+            <div class="dimmer-section">
+                <label for="dimmer-slider" class="dimmer-label">Helligkeit</label>
+                <input type="range" id="dimmer-slider" min="0" max="100" value="50" class="dimmer-slider">
+                <span id="dimmer-value" class="dimmer-value">50%</span>
+            </div>
+
+            <a href="{{ url_for('index') }}" class="small-button secondary-button">Zurück zur Startseite</a>
+        </div>
+    </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const slider = document.getElementById('dimmer-slider');
+    const value = document.getElementById('dimmer-value');
+    const onButton = document.querySelector('.on-button');
+    const offButton = document.querySelector('.off-button');
+
+    slider.addEventListener('input', function() {
+        value.textContent = slider.value + '%';
+    });
+
+    onButton.addEventListener('click', function() {
+        onButton.classList.add('active');
+        offButton.classList.remove('active');
+    });
+
+    offButton.addEventListener('click', function() {
+        offButton.classList.add('active');
+        onButton.classList.remove('active');
+    });
+});
+</script>
+
+</body>
+</html>

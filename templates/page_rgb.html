@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="screen">
+    <main class="page-grid">
+        <div class="page-panel">
+            <h1>{{ title }}</h1>
+            <p class="page-text">{{ subtitle }}</p>
+
+            <div class="control-section">
+                <button class="control-button on-button">An</button>
+                <button class="control-button off-button">Aus</button>
+            </div>
+
+            <div class="rgb-section">
+                <section class="color-wheel-panel" id="color-wheel-panel" aria-labelledby="color-wheel-label">
+                    <div class="color-wheel-header">
+                        <span id="color-wheel-label" class="color-label">Farbe wählen</span>
+                        <span id="color-mode-hint" class="color-mode-hint">Aktiv bei Statisch und Pulsierend</span>
+                    </div>
+                    <div class="color-wheel-wrap">
+                        <canvas id="color-wheel" class="color-wheel" width="260" height="260" aria-label="RGB-Farbkreis"></canvas>
+                        <div id="color-selector" class="color-selector" aria-hidden="true"></div>
+                    </div>
+                    <div class="selected-color-row">
+                        <span id="selected-color-preview" class="selected-color-preview"></span>
+                        <span id="selected-color-value" class="selected-color-value">#ff0000 · RGB 255, 0, 0</span>
+                    </div>
+                </section>
+
+                <section class="mode-section" aria-labelledby="mode-label">
+                    <span id="mode-label" class="mode-label">Modus</span>
+                    <div class="mode-buttons">
+                        <button class="mode-button active" data-mode="static">Statisch</button>
+                        <button class="mode-button" data-mode="pulse">Pulsierend</button>
+                        <button class="mode-button" data-mode="fade">Farbwechselnd</button>
+                    </div>
+
+                    <div class="dimmer-section rgb-dimmer-section">
+                        <label for="rgb-dimmer-slider" class="dimmer-label">Helligkeit</label>
+                        <input type="range" id="rgb-dimmer-slider" min="0" max="100" value="50" class="dimmer-slider">
+                        <span id="rgb-dimmer-value" class="dimmer-value">50%</span>
+                    </div>
+
+                    <div class="dimmer-section rgb-speed-section">
+                        <label for="rgb-speed-slider" class="dimmer-label">Geschwindigkeit</label>
+                        <input type="range" id="rgb-speed-slider" min="1" max="100" value="50" class="dimmer-slider">
+                        <span id="rgb-speed-value" class="dimmer-value">50%</span>
+                    </div>
+                </section>
+            </div>
+
+            <a href="{{ url_for('index') }}" class="small-button secondary-button">Zurück zur Startseite</a>
+        </div>
+    </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const device = 'barlicht_aussen';
+    const wheel = document.getElementById('color-wheel');
+    const ctx = wheel.getContext('2d', { willReadFrequently: true });
+    const selector = document.getElementById('color-selector');
+    const colorPanel = document.getElementById('color-wheel-panel');
+    const colorPreview = document.getElementById('selected-color-preview');
+    const colorValue = document.getElementById('selected-color-value');
+    const modeButtons = document.querySelectorAll('.mode-button');
+    const dimmerSlider = document.getElementById('rgb-dimmer-slider');
+    const dimmerValue = document.getElementById('rgb-dimmer-value');
+    const speedSection = document.querySelector('.rgb-speed-section');
+    const speedSlider = document.getElementById('rgb-speed-slider');
+    const speedValue = document.getElementById('rgb-speed-value');
+    const onButton = document.querySelector('.on-button');
+    const offButton = document.querySelector('.off-button');
+
+    let currentMode = 'static';
+    let currentColor = '#ff0000';
+    let isDragging = false;
+
+    function canPickColor() {
+        return currentMode === 'static' || currentMode === 'pulse';
+    }
+
+    function usesSpeed(mode) {
+        return mode === 'pulse' || mode === 'fade';
+    }
+
+    function hsvToRgb(h, s, v) {
+        const c = v * s;
+        const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+        const m = v - c;
+        let r = 0;
+        let g = 0;
+        let b = 0;
+
+        if (h < 60) {
+            r = c; g = x;
+        } else if (h < 120) {
+            r = x; g = c;
+        } else if (h < 180) {
+            g = c; b = x;
+        } else if (h < 240) {
+            g = x; b = c;
+        } else if (h < 300) {
+            r = x; b = c;
+        } else {
+            r = c; b = x;
+        }
+
+        return {
+            r: Math.round((r + m) * 255),
+            g: Math.round((g + m) * 255),
+            b: Math.round((b + m) * 255)
+        };
+    }
+
+    function rgbToHex(r, g, b) {
+        return '#' + [r, g, b].map(value => value.toString(16).padStart(2, '0')).join('');
+    }
+
+    function hexToRgb(hex) {
+        const value = hex.replace('#', '');
+        return {
+            r: parseInt(value.slice(0, 2), 16),
+            g: parseInt(value.slice(2, 4), 16),
+            b: parseInt(value.slice(4, 6), 16)
+        };
+    }
+
+    function drawColorWheel() {
+        const size = wheel.width;
+        const radius = size / 2;
+        const image = ctx.createImageData(size, size);
+
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const dx = x - radius;
+                const dy = y - radius;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const offset = (y * size + x) * 4;
+
+                if (distance <= radius) {
+                    let hue = Math.atan2(dy, dx) * 180 / Math.PI;
+                    if (hue < 0) {
+                        hue += 360;
+                    }
+                    const saturation = distance / radius;
+                    const rgb = hsvToRgb(hue, saturation, 1);
+                    image.data[offset] = rgb.r;
+                    image.data[offset + 1] = rgb.g;
+                    image.data[offset + 2] = rgb.b;
+                    image.data[offset + 3] = 255;
+                } else {
+                    image.data[offset + 3] = 0;
+                }
+            }
+        }
+
+        ctx.putImageData(image, 0, 0);
+    }
+
+    function setSelectorPosition(x, y) {
+        selector.style.left = x + 'px';
+        selector.style.top = y + 'px';
+    }
+
+    function updateSelectedColor(hex, shouldSync = true) {
+        const rgb = hexToRgb(hex);
+        currentColor = hex;
+        colorPreview.style.backgroundColor = hex;
+        colorValue.textContent = `${hex} · RGB ${rgb.r}, ${rgb.g}, ${rgb.b}`;
+
+        if (shouldSync && canPickColor()) {
+            syncStatus({ color: currentColor });
+        }
+    }
+
+    function pickColorFromPoint(clientX, clientY) {
+        if (!canPickColor()) {
+            return;
+        }
+
+        const rect = wheel.getBoundingClientRect();
+        const scale = wheel.width / rect.width;
+        const x = (clientX - rect.left) * scale;
+        const y = (clientY - rect.top) * scale;
+        const radius = wheel.width / 2;
+        const dx = x - radius;
+        const dy = y - radius;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > radius) {
+            return;
+        }
+
+        const pixel = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
+        const hex = rgbToHex(pixel[0], pixel[1], pixel[2]);
+        setSelectorPosition(x / scale, y / scale);
+        updateSelectedColor(hex);
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        modeButtons.forEach(button => {
+            button.classList.toggle('active', button.dataset.mode === mode);
+        });
+        colorPanel.classList.toggle('disabled', !canPickColor());
+        colorPanel.setAttribute('aria-disabled', !canPickColor());
+        speedSection.classList.toggle('is-visible', usesSpeed(mode));
+        speedSection.setAttribute('aria-hidden', !usesSpeed(mode));
+
+        const update = { mode };
+        if (canPickColor()) {
+            update.color = currentColor;
+        }
+        syncStatus(update);
+    }
+
+    function syncStatus(update) {
+        fetch(`/status/${device}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(update)
+        }).catch(() => {});
+    }
+
+    function setPower(isOn) {
+        onButton.classList.toggle('active', isOn);
+        offButton.classList.toggle('active', !isOn);
+        syncStatus({ on: isOn });
+    }
+
+    function setBrightness(value) {
+        dimmerValue.textContent = value + '%';
+        syncStatus({ brightness: Number(value) });
+    }
+
+    function setSpeed(value) {
+        speedValue.textContent = value + '%';
+        syncStatus({ speed: Number(value) });
+    }
+
+    drawColorWheel();
+    setSelectorPosition(238, 130);
+    updateSelectedColor(currentColor, false);
+    speedSection.setAttribute('aria-hidden', 'true');
+
+    wheel.addEventListener('pointerdown', function(event) {
+        isDragging = true;
+        wheel.setPointerCapture(event.pointerId);
+        pickColorFromPoint(event.clientX, event.clientY);
+    });
+
+    wheel.addEventListener('pointermove', function(event) {
+        if (isDragging) {
+            pickColorFromPoint(event.clientX, event.clientY);
+        }
+    });
+
+    wheel.addEventListener('pointerup', function(event) {
+        isDragging = false;
+        wheel.releasePointerCapture(event.pointerId);
+    });
+
+    wheel.addEventListener('pointercancel', function() {
+        isDragging = false;
+    });
+
+    modeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            setMode(this.dataset.mode);
+        });
+    });
+
+    dimmerSlider.addEventListener('input', function() {
+        setBrightness(dimmerSlider.value);
+    });
+
+    speedSlider.addEventListener('input', function() {
+        setSpeed(speedSlider.value);
+    });
+
+    onButton.addEventListener('click', function() {
+        setPower(true);
+    });
+
+    offButton.addEventListener('click', function() {
+        setPower(false);
+    });
+});
+</script>
+
+</body>
+</html>

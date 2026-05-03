@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Lichtsteuerung Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="screen login-screen">
+    <main class="login-panel">
+        <h1>Lichtsteuerung</h1>
+        <p class="page-text">Bitte Passwort eingeben.</p>
+
+        <form method="post" class="login-form">
+            <label for="password" class="login-label">Passwort</label>
+            <input type="password" id="password" name="password" class="login-input" autofocus required>
+
+            {% if error %}
+                <p class="login-error">{{ error }}</p>
+            {% endif %}
+
+            <button type="submit" class="control-button login-button">Einloggen</button>
+        </form>
+    </main>
+</div>
+
+</body>
+</html>
