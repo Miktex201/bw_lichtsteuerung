@@ -42,6 +42,8 @@ class SimpleWebServer:
             }
         }
 
+        self.manual_dmx_values = {channel: 0 for channel in range(1, 256)}
+
         self._setup_routes()
 
     def _setup_routes(self):
@@ -116,6 +118,14 @@ class SimpleWebServer:
                 button_text="Zurück zur Übersicht"
             )
 
+        @self.app.route("/diskolicht-decke/einstellungen", methods=["GET"])
+        def barlicht_decke_einstellungen():
+            return render_template(
+                "page_dmx_controller.html",
+                title="DMX Einstellungen",
+                subtitle="Manuelle Steuerung der Diskolicht-Decke"
+            )
+
         @self.app.route("/barlicht-aussen", methods=["GET"])
         def redirect_barlicht_aussen():
             return redirect(url_for("barlicht_aussen"))
@@ -123,6 +133,10 @@ class SimpleWebServer:
         @self.app.route("/barlichtdecke", methods=["GET"])
         def redirect_barlicht_decke():
             return redirect(url_for("barlicht_decke"))
+
+        @self.app.route("/barlichtdecke/einstellungen", methods=["GET"])
+        def redirect_barlicht_decke_einstellungen():
+            return redirect(url_for("barlicht_decke_einstellungen"))
 
         @self.app.route('/graphics/<path:filename>')
         def graphics(filename):
@@ -146,6 +160,40 @@ class SimpleWebServer:
             self._apply_device_status(device)
 
             return jsonify(self.status[device])
+
+        @self.app.route('/dmx/manual', methods=['GET'])
+        def get_manual_dmx():
+            return jsonify({
+                "channels": self.manual_dmx_values,
+                "max_channel": 255
+            })
+
+        @self.app.route('/dmx/manual', methods=['POST'])
+        def update_manual_dmx():
+            data = request.get_json(silent=True) or {}
+            raw_values = data.get("channels", {})
+            updates = {}
+
+            for channel, value in raw_values.items():
+                try:
+                    channel_number = int(channel)
+                    channel_value = max(0, min(255, int(value)))
+                except (TypeError, ValueError):
+                    continue
+
+                if 1 <= channel_number <= 255:
+                    self.manual_dmx_values[channel_number] = channel_value
+                    updates[channel_number] = channel_value
+
+            if updates and self.lighting_controller:
+                self.status["barlichtdecke"]["on"] = True
+                self.lighting_controller.set_manual_channels(updates)
+
+            return jsonify({
+                "channels": self.manual_dmx_values,
+                "updated": updates,
+                "max_channel": 255
+            })
 
     def _apply_device_status(self, device):
         if not self.lighting_controller:

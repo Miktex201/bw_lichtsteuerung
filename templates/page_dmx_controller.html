@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="screen dmx-screen">
+    <main class="page-grid">
+        <div class="page-panel dmx-panel">
+            <h1>{{ title }}</h1>
+            <p class="page-text">{{ subtitle }}</p>
+
+            <div class="dmx-nav" aria-label="DMX Kanalbereich">
+                <button type="button" class="dmx-arrow" id="dmx-prev" aria-label="Vorherige Kanaele">&#8249;</button>
+                <div class="dmx-range" id="dmx-range">CH1 - CH8</div>
+                <button type="button" class="dmx-arrow" id="dmx-next" aria-label="Naechste Kanaele">&#8250;</button>
+            </div>
+
+            <div class="dmx-controller" id="dmx-controller" aria-live="polite"></div>
+
+            <a href="{{ url_for('barlicht_decke') }}" class="small-button secondary-button">Zur&uuml;ck zur Decke</a>
+        </div>
+    </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const maxChannel = 255;
+    const channelsPerPage = 8;
+    const maxPage = Math.floor((maxChannel - 1) / channelsPerPage);
+    const controller = document.getElementById('dmx-controller');
+    const rangeLabel = document.getElementById('dmx-range');
+    const prevButton = document.getElementById('dmx-prev');
+    const nextButton = document.getElementById('dmx-next');
+
+    let currentPage = 0;
+    let channelValues = {};
+    let sendTimer = null;
+
+    function valueFor(channel) {
+        return Number(channelValues[channel] || 0);
+    }
+
+    function startChannel() {
+        return currentPage * channelsPerPage + 1;
+    }
+
+    function render() {
+        const start = startChannel();
+        const end = Math.min(start + channelsPerPage - 1, maxChannel);
+        rangeLabel.textContent = `CH${start} - CH${end}`;
+        prevButton.disabled = currentPage === 0;
+        nextButton.disabled = currentPage === maxPage;
+
+        controller.innerHTML = '';
+
+        for (let channel = start; channel <= end; channel++) {
+            const row = document.createElement('div');
+            row.className = 'dmx-channel-row';
+
+            const label = document.createElement('label');
+            label.className = 'dmx-channel-label';
+            label.setAttribute('for', `dmx-channel-${channel}`);
+            label.textContent = `CH${channel}`;
+
+            const slider = document.createElement('input');
+            slider.type = 'range';
+            slider.min = '0';
+            slider.max = '255';
+            slider.value = String(valueFor(channel));
+            slider.id = `dmx-channel-${channel}`;
+            slider.className = 'dimmer-slider dmx-slider';
+
+            const number = document.createElement('input');
+            number.type = 'number';
+            number.min = '0';
+            number.max = '255';
+            number.inputMode = 'numeric';
+            number.value = slider.value;
+            number.className = 'dmx-value-input';
+            number.setAttribute('aria-label', `Wert fuer Kanal ${channel}`);
+
+            function setValue(value) {
+                const clamped = Math.max(0, Math.min(255, Number(value) || 0));
+                channelValues[channel] = clamped;
+                slider.value = String(clamped);
+                number.value = String(clamped);
+                queueUpdate(channel, clamped);
+            }
+
+            slider.addEventListener('input', function() {
+                setValue(slider.value);
+            });
+
+            number.addEventListener('input', function() {
+                setValue(number.value);
+            });
+
+            row.append(label, slider, number);
+            controller.appendChild(row);
+        }
+    }
+
+    function queueUpdate(channel, value) {
+        window.clearTimeout(sendTimer);
+        sendTimer = window.setTimeout(function() {
+            fetch('/dmx/manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ channels: { [channel]: value } })
+            }).catch(() => {});
+        }, 60);
+    }
+
+    prevButton.addEventListener('click', function() {
+        if (currentPage > 0) {
+            currentPage--;
+            render();
+        }
+    });
+
+    nextButton.addEventListener('click', function() {
+        if (currentPage < maxPage) {
+            currentPage++;
+            render();
+        }
+    });
+
+    fetch('/dmx/manual')
+        .then(response => response.json())
+        .then(data => {
+            channelValues = data.channels || {};
+            render();
+        })
+        .catch(render);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Lightbar Demo</title>
+<style>
+  body {
+    background: #2b2b2b;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+</style>
+</head>
+<body>
+
+<svg width="1920" height="1080" viewBox="0 0 1920 1080">
+
+  <!-- Hintergrund -->
+  <rect x="0" y="0" width="1920" height="1080" fill="#3a2f25"/>
+
+  <!-- Lightbars Container -->
+  <g id="lightbars"></g>
+
+  <!-- Moving Heads -->
+  <circle id="mh1" cx="1750" cy="300" r="60" fill="#111"/>
+  <circle id="mh2" cx="1750" cy="650" r="60" fill="#111"/>
+
+</svg>
+
+<script>
+const svg = document.querySelector("#lightbars");
+
+// Positionen der 6 Lightbars
+const bars = [
+  {id:1, x:1150, y:250},
+  {id:2, x:1150, y:600},
+  {id:3, x:700,  y:250},
+  {id:4, x:700,  y:600},
+  {id:5, x:250,  y:250},
+  {id:6, x:250,  y:600},
+];
+
+const SEGMENTS = 12;
+const WIDTH = 500;
+const HEIGHT = 60;
+const SEG_W = WIDTH / SEGMENTS;
+
+// Lightbars erzeugen
+bars.forEach(bar => {
+  for(let i=0;i<SEGMENTS;i++){
+    let rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+
+    rect.setAttribute("id", `lb${bar.id}_seg${i}`);
+    rect.setAttribute("x", bar.x + i*SEG_W);
+    rect.setAttribute("y", bar.y);
+    rect.setAttribute("width", SEG_W - 2);
+    rect.setAttribute("height", HEIGHT);
+    rect.setAttribute("fill", "#111");
+
+    svg.appendChild(rect);
+  }
+});
+
+// Lauflicht
+let step = 0;
+
+setInterval(() => {
+
+  // alles aus
+  bars.forEach(bar => {
+    for(let i=0;i<SEGMENTS;i++){
+      document.getElementById(`lb${bar.id}_seg${i}`)
+        .setAttribute("fill", "#111");
+    }
+  });
+
+  // aktuelles Segment an
+  bars.forEach(bar => {
+    let el = document.getElementById(`lb${bar.id}_seg${step}`);
+    if(el) el.setAttribute("fill", "red");
+  });
+
+  step = (step + 1) % SEGMENTS;
+
+}, 120);
+
+// Moving Heads blinken
+let toggle = false;
+
+setInterval(()=>{
+  document.getElementById("mh1")
+    .setAttribute("fill", toggle ? "red" : "#111");
+
+  document.getElementById("mh2")
+    .setAttribute("fill", toggle ? "#111" : "red");
+
+  toggle = !toggle;
+}, 500);
+
+</script>
+
+</body>
+</html>

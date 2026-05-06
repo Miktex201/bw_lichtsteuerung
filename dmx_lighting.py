@@ -75,6 +75,10 @@ class DmxLightingController:
             values.update(fixture.values_for(red, green, blue))
         self.driver.set_channels(values)
 
+    def set_manual_channels(self, values):
+        self._stop_effect()
+        self.driver.set_channels(values)
+
     def _start_effect(self, mode):
         with self.lock:
             if self.effect_running and self.effect_mode == mode:
