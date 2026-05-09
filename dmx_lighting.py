@@ -134,15 +134,7 @@ class DmxLightingController:
         self.driver.set_channels(values)
 
     def set_manual_channels(self, values):
-        values = {
-            channel: value
-            for channel, value in values.items()
-            if channel not in self.lightbar_channels
-        }
-
-        if not values:
-            return
-
+        self._stop_effect()
         self.driver.set_channels(values)
 
     def _start_effect(self, mode):

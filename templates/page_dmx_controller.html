@@ -38,7 +38,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let currentPage = 0;
     let channelValues = {};
-    let protectedChannels = new Set();
     let sendTimer = null;
 
     function valueFor(channel) {
@@ -59,14 +58,13 @@ document.addEventListener('DOMContentLoaded', function() {
         controller.innerHTML = '';
 
         for (let channel = start; channel <= end; channel++) {
-            const isProtected = protectedChannels.has(channel);
             const row = document.createElement('div');
             row.className = 'dmx-channel-row';
 
             const label = document.createElement('label');
             label.className = 'dmx-channel-label';
             label.setAttribute('for', `dmx-channel-${channel}`);
-            label.textContent = isProtected ? `CH${channel} Decke` : `CH${channel}`;
+            label.textContent = `CH${channel}`;
 
             const slider = document.createElement('input');
             slider.type = 'range';
@@ -75,7 +73,6 @@ document.addEventListener('DOMContentLoaded', function() {
             slider.value = String(valueFor(channel));
             slider.id = `dmx-channel-${channel}`;
             slider.className = 'dimmer-slider dmx-slider';
-            slider.disabled = isProtected;
 
             const number = document.createElement('input');
             number.type = 'number';
@@ -85,7 +82,6 @@ document.addEventListener('DOMContentLoaded', function() {
             number.value = slider.value;
             number.className = 'dmx-value-input';
             number.setAttribute('aria-label', `Wert fuer Kanal ${channel}`);
-            number.disabled = isProtected;
 
             function setValue(value) {
                 const clamped = Math.max(0, Math.min(255, Number(value) || 0));
@@ -109,10 +105,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function queueUpdate(channel, value) {
-        if (protectedChannels.has(channel)) {
-            return;
-        }
-
         window.clearTimeout(sendTimer);
         sendTimer = window.setTimeout(function() {
             fetch('/dmx/manual', {
@@ -121,6 +113,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({ channels: { [channel]: value } })
             }).catch(() => {});
         }, 60);
+    }
+
+    function setManualActive(active) {
+        fetch('/dmx/manual/control', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ active }),
+            keepalive: true
+        }).catch(() => {});
     }
 
     prevButton.addEventListener('click', function() {
@@ -141,10 +142,15 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             channelValues = data.channels || {};
-            protectedChannels = new Set(data.protected_channels || []);
             render();
         })
         .catch(render);
+
+    setManualActive(true);
+
+    window.addEventListener('pagehide', function() {
+        setManualActive(false);
+    });
 });
 </script>
 

@@ -43,6 +43,7 @@ class SimpleWebServer:
         }
 
         self.manual_dmx_values = {channel: 0 for channel in range(1, 256)}
+        self.manual_dmx_active = False
 
         self._setup_routes()
 
@@ -111,6 +112,7 @@ class SimpleWebServer:
 
         @self.app.route("/diskolicht-decke", methods=["GET"])
         def barlicht_decke():
+            self._set_manual_dmx_active(False)
             return render_template(
                 "page.html",
                 title="Diskolicht Decke",
@@ -120,6 +122,7 @@ class SimpleWebServer:
 
         @self.app.route("/diskolicht-decke/einstellungen", methods=["GET"])
         def barlicht_decke_einstellungen():
+            self._set_manual_dmx_active(True)
             return render_template(
                 "page_dmx_controller.html",
                 title="DMX Einstellungen",
@@ -151,6 +154,9 @@ class SimpleWebServer:
             if device not in self.status:
                 return jsonify({"error": "Unbekanntes Geraet"}), 404
 
+            if device == "barlichtdecke":
+                self.manual_dmx_active = False
+
             data = request.get_json(silent=True) or {}
             allowed_keys = set(self.status[device].keys())
             for key, value in data.items():
@@ -163,13 +169,9 @@ class SimpleWebServer:
 
         @self.app.route('/dmx/manual', methods=['GET'])
         def get_manual_dmx():
-            protected_channels = []
-            if self.lighting_controller:
-                protected_channels = sorted(self.lighting_controller.lightbar_channels)
-
             return jsonify({
                 "channels": self.manual_dmx_values,
-                "protected_channels": protected_channels,
+                "manual_active": self.manual_dmx_active,
                 "max_channel": 255
             })
 
@@ -191,14 +193,22 @@ class SimpleWebServer:
                     updates[channel_number] = channel_value
 
             if updates and self.lighting_controller:
+                self.manual_dmx_active = True
                 self.lighting_controller.set_manual_channels(updates)
 
             return jsonify({
                 "channels": self.manual_dmx_values,
                 "updated": updates,
-                "protected_channels": sorted(self.lighting_controller.lightbar_channels) if self.lighting_controller else [],
+                "manual_active": self.manual_dmx_active,
                 "max_channel": 255
             })
+
+        @self.app.route('/dmx/manual/control', methods=['POST'])
+        def control_manual_dmx():
+            data = request.get_json(silent=True) or {}
+            active = bool(data.get("active"))
+            self._set_manual_dmx_active(active)
+            return jsonify({"manual_active": self.manual_dmx_active})
 
     def _apply_device_status(self, device):
         if not self.lighting_controller:
@@ -206,6 +216,12 @@ class SimpleWebServer:
 
         if device == "barlichtdecke":
             self.lighting_controller.apply_ceiling_status(self.status[device])
+
+    def _set_manual_dmx_active(self, active):
+        self.manual_dmx_active = active
+
+        if not active:
+            self._apply_device_status("barlichtdecke")
 
     def start(self):
         print(f"Server läuft auf http://{self.host}:{self.port}")
