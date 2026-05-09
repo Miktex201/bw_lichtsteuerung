@@ -12,6 +12,7 @@ class RgbFixture:
         blue_channel,
         program_channel,
         speed_channel,
+        effect_channel,
         dimmer_channel
     ):
         self.name = name
@@ -20,6 +21,7 @@ class RgbFixture:
         self.blue_channel = blue_channel
         self.program_channel = program_channel
         self.speed_channel = speed_channel
+        self.effect_channel = effect_channel
         self.dimmer_channel = dimmer_channel
 
     def values_for(self, red, green, blue, dimmer):
@@ -29,6 +31,7 @@ class RgbFixture:
             self.blue_channel: blue,
             self.program_channel: 0,
             self.speed_channel: 0,
+            self.effect_channel: 0,
             self.dimmer_channel: dimmer
         }
 
@@ -39,6 +42,7 @@ class RgbFixture:
             self.blue_channel: 0,
             self.program_channel: program,
             self.speed_channel: speed,
+            self.effect_channel: 0,
             self.dimmer_channel: dimmer
         }
 
@@ -52,12 +56,12 @@ class DmxLightingController:
         self.effect_running = False
         self.effect_thread = None
         self.lightbars = [
-            RgbFixture("Lightbar 1", 33, 34, 35, 36, 37, 39),
-            RgbFixture("Lightbar 2", 43, 44, 45, 46, 47, 49),
-            RgbFixture("Lightbar 3", 53, 54, 55, 56, 57, 59),
-            RgbFixture("Lightbar 4", 63, 64, 65, 66, 67, 69),
-            RgbFixture("Lightbar 5", 73, 74, 75, 76, 77, 79),
-            RgbFixture("Lightbar 6", 83, 84, 85, 86, 87, 89),
+            RgbFixture("Lightbar 1", 33, 34, 35, 36, 37, 38, 39),
+            RgbFixture("Lightbar 2", 43, 44, 45, 46, 47, 48, 49),
+            RgbFixture("Lightbar 3", 53, 54, 55, 56, 57, 58, 59),
+            RgbFixture("Lightbar 4", 63, 64, 65, 66, 67, 68, 69),
+            RgbFixture("Lightbar 5", 73, 74, 75, 76, 77, 78, 79),
+            RgbFixture("Lightbar 6", 83, 84, 85, 86, 87, 88, 89),
         ]
         self.lightbar_channels = {
             channel
@@ -68,6 +72,7 @@ class DmxLightingController:
                 fixture.blue_channel,
                 fixture.program_channel,
                 fixture.speed_channel,
+                fixture.effect_channel,
                 fixture.dimmer_channel
             )
         }

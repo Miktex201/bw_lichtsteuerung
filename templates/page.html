@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let currentMode = 'static';
     let currentColor = '#ff0000';
+    let currentOn = false;
     let isDragging = false;
 
     function canPickColor() {
@@ -181,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
         colorValue.textContent = `${hex} · RGB ${rgb.r}, ${rgb.g}, ${rgb.b}`;
 
         if (shouldSync && canPickColor()) {
-            syncStatus({ color: currentColor });
+            syncStatus({ on: true, color: currentColor });
         }
     }
 
@@ -220,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
         speedSection.classList.toggle('is-visible', usesSpeed(mode));
         speedSection.setAttribute('aria-hidden', !usesSpeed(mode));
 
-        const update = { mode };
+        const update = { on: true, mode };
         if (canPickColor()) {
             update.color = currentColor;
         }
@@ -232,29 +233,71 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(update)
-        }).catch(() => {});
+        })
+            .then(response => response.json())
+            .then(status => applyStatus(status))
+            .catch(() => {});
+    }
+
+    function applyStatus(status) {
+        if (!status) {
+            return;
+        }
+
+        currentOn = Boolean(status.on);
+        onButton.classList.toggle('active', currentOn);
+        offButton.classList.toggle('active', !currentOn);
+
+        if (status.mode) {
+            currentMode = status.mode;
+            modeButtons.forEach(button => {
+                button.classList.toggle('active', button.dataset.mode === currentMode);
+            });
+            colorPanel.classList.toggle('disabled', !canPickColor());
+            colorPanel.setAttribute('aria-disabled', !canPickColor());
+            speedSection.classList.toggle('is-visible', usesSpeed(currentMode));
+            speedSection.setAttribute('aria-hidden', !usesSpeed(currentMode));
+        }
+
+        if (status.color) {
+            updateSelectedColor(status.color, false);
+        }
+
+        if (status.brightness !== undefined) {
+            dimmerSlider.value = String(status.brightness);
+            dimmerValue.textContent = status.brightness + '%';
+        }
+
+        if (status.speed !== undefined) {
+            speedSlider.value = String(status.speed);
+            speedValue.textContent = status.speed + '%';
+        }
     }
 
     function setPower(isOn) {
-        onButton.classList.toggle('active', isOn);
-        offButton.classList.toggle('active', !isOn);
         syncStatus({ on: isOn });
     }
 
     function setBrightness(value) {
         dimmerValue.textContent = value + '%';
-        syncStatus({ brightness: Number(value) });
+        syncStatus({ on: true, brightness: Number(value) });
     }
 
     function setSpeed(value) {
         speedValue.textContent = value + '%';
-        syncStatus({ speed: Number(value) });
+        syncStatus({ on: true, speed: Number(value) });
     }
 
     drawColorWheel();
     setSelectorPosition(238, 130);
     updateSelectedColor(currentColor, false);
     speedSection.setAttribute('aria-hidden', 'true');
+    applyStatus({ on: currentOn });
+
+    fetch('/status')
+        .then(response => response.json())
+        .then(status => applyStatus(status[device]))
+        .catch(() => {});
 
     wheel.addEventListener('pointerdown', function(event) {
         isDragging = true;
