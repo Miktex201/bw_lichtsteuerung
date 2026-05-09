@@ -43,14 +43,14 @@
                     </div>
 
                     <div class="dimmer-section ceiling-dimmer-section">
-                        <label for="ceiling-dimmer-slider" class="dimmer-label">Helligkeit</label>
+                        <label for="ceiling-dimmer-slider" class="dimmer-label">Master-Dimmer</label>
                         <input type="range" id="ceiling-dimmer-slider" min="0" max="100" value="50" class="dimmer-slider">
                         <span id="ceiling-dimmer-value" class="dimmer-value">50%</span>
                     </div>
 
                     <div class="dimmer-section ceiling-speed-section">
                         <label for="ceiling-speed-slider" class="dimmer-label">Geschwindigkeit</label>
-                        <input type="range" id="ceiling-speed-slider" min="1" max="100" value="50" class="dimmer-slider">
+                        <input type="range" id="ceiling-speed-slider" min="0" max="100" value="50" class="dimmer-slider">
                         <span id="ceiling-speed-value" class="dimmer-value">50%</span>
                     </div>
                 </section>
@@ -75,6 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const colorPreview = document.getElementById('ceiling-color-preview');
     const colorValue = document.getElementById('ceiling-color-value');
     const modeButtons = document.querySelectorAll('.mode-button');
+    const dimmerSection = document.querySelector('.ceiling-dimmer-section');
     const dimmerSlider = document.getElementById('ceiling-dimmer-slider');
     const dimmerValue = document.getElementById('ceiling-dimmer-value');
     const speedSection = document.querySelector('.ceiling-speed-section');
@@ -94,6 +95,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function usesSpeed(mode) {
         return mode === 'party' || mode === 'slow_fade';
+    }
+
+    function usesBrightness(mode) {
+        return mode === 'static';
+    }
+
+    function updateModeControls(mode) {
+        colorPanel.classList.toggle('disabled', !canPickColor());
+        colorPanel.setAttribute('aria-disabled', !canPickColor());
+        dimmerSection.classList.toggle('is-hidden', !usesBrightness(mode));
+        dimmerSection.setAttribute('aria-hidden', !usesBrightness(mode));
+        speedSection.classList.toggle('is-visible', usesSpeed(mode));
+        speedSection.setAttribute('aria-hidden', !usesSpeed(mode));
     }
 
     function hsvToRgb(h, s, v) {
@@ -138,6 +152,36 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
+    function rgbToHsv(r, g, b) {
+        r /= 255;
+        g /= 255;
+        b /= 255;
+
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const delta = max - min;
+        let h = 0;
+
+        if (delta !== 0) {
+            if (max === r) {
+                h = 60 * (((g - b) / delta) % 6);
+            } else if (max === g) {
+                h = 60 * ((b - r) / delta + 2);
+            } else {
+                h = 60 * ((r - g) / delta + 4);
+            }
+        }
+
+        if (h < 0) {
+            h += 360;
+        }
+
+        return {
+            h,
+            s: max === 0 ? 0 : delta / max
+        };
+    }
+
     function drawColorWheel() {
         const size = wheel.width;
         const radius = size / 2;
@@ -175,6 +219,20 @@ document.addEventListener('DOMContentLoaded', function() {
         selector.style.top = y + 'px';
     }
 
+    function setSelectorFromColor(hex) {
+        const rgb = hexToRgb(hex);
+        const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+        const rect = wheel.getBoundingClientRect();
+        const scale = rect.width / wheel.width;
+        const radius = wheel.width / 2;
+        const angle = hsv.h * Math.PI / 180;
+        const distance = hsv.s * radius;
+        const x = radius + Math.cos(angle) * distance;
+        const y = radius + Math.sin(angle) * distance;
+
+        setSelectorPosition(x * scale, y * scale);
+    }
+
     function updateSelectedColor(hex, shouldSync = true) {
         const rgb = hexToRgb(hex);
         currentColor = hex;
@@ -182,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
         colorValue.textContent = `${hex} · RGB ${rgb.r}, ${rgb.g}, ${rgb.b}`;
 
         if (shouldSync && canPickColor()) {
-            syncStatus({ on: true, color: currentColor });
+            syncStatus({ on: true, mode: 'static', color: currentColor });
         }
     }
 
@@ -216,10 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
             button.classList.toggle('active', button.dataset.mode === mode);
         });
 
-        colorPanel.classList.toggle('disabled', !canPickColor());
-        colorPanel.setAttribute('aria-disabled', !canPickColor());
-        speedSection.classList.toggle('is-visible', usesSpeed(mode));
-        speedSection.setAttribute('aria-hidden', !usesSpeed(mode));
+        updateModeControls(mode);
 
         const update = { on: true, mode };
         if (canPickColor()) {
@@ -253,14 +308,12 @@ document.addEventListener('DOMContentLoaded', function() {
             modeButtons.forEach(button => {
                 button.classList.toggle('active', button.dataset.mode === currentMode);
             });
-            colorPanel.classList.toggle('disabled', !canPickColor());
-            colorPanel.setAttribute('aria-disabled', !canPickColor());
-            speedSection.classList.toggle('is-visible', usesSpeed(currentMode));
-            speedSection.setAttribute('aria-hidden', !usesSpeed(currentMode));
+            updateModeControls(currentMode);
         }
 
         if (status.color) {
             updateSelectedColor(status.color, false);
+            setSelectorFromColor(status.color);
         }
 
         if (status.brightness !== undefined) {
@@ -279,6 +332,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function setBrightness(value) {
+        if (!usesBrightness(currentMode)) {
+            return;
+        }
+
         dimmerValue.textContent = value + '%';
         syncStatus({ on: true, brightness: Number(value) });
     }
@@ -291,6 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
     drawColorWheel();
     setSelectorPosition(238, 130);
     updateSelectedColor(currentColor, false);
+    updateModeControls(currentMode);
     speedSection.setAttribute('aria-hidden', 'true');
     applyStatus({ on: currentOn });
 

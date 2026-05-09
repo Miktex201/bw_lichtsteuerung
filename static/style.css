@@ -534,6 +534,10 @@ body::before {
     transition: max-height 0.35s ease, opacity 0.25s ease, transform 0.35s ease, margin-top 0.35s ease;
 }
 
+.ceiling-dimmer-section.is-hidden {
+    display: none;
+}
+
 .rgb-speed-section.is-visible,
 .ceiling-speed-section.is-visible {
     max-height: 130px;

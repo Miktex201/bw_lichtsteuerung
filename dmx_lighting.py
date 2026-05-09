@@ -1,6 +1,7 @@
-import colorsys
 import threading
 import time
+
+from dmx_party_programs import PartyProgram
 
 
 class RgbFixture:
@@ -124,12 +125,30 @@ class DmxLightingController:
 
     def set_lightbars_program(self, program, speed, brightness=100):
         program = self._dmx_value(program)
-        speed = self._percent_to_dmx(speed, minimum=1)
+        speed = self._program_speed_to_dmx(speed)
         dimmer_value = self._brightness_to_dmx(brightness)
 
         values = {}
         for fixture in self.lightbars:
             values.update(fixture.program_values_for(program, speed, dimmer_value))
+
+        self.driver.set_channels(values)
+
+    def set_lightbar_program_chase_stage(self, stage_programs, speed, brightness=100, speed_dmx=None):
+        if speed_dmx is None:
+            speed = self._party_chase_speed_to_dmx(speed)
+        else:
+            speed = self._dmx_value(speed_dmx)
+        dimmer_value = self._brightness_to_dmx(brightness)
+
+        values = {}
+        for index, fixture in enumerate(self.lightbars):
+            program = stage_programs.get(index)
+            if program is not None:
+                program = self._dmx_value(program)
+                values.update(fixture.program_values_for(program, speed, dimmer_value))
+            else:
+                values.update(fixture.values_for(0, 0, 0, 0))
 
         self.driver.set_channels(values)
 
@@ -161,57 +180,48 @@ class DmxLightingController:
             thread.join(timeout=1)
 
     def _effect_loop(self):
-        hue = 0.0
-        last_update = time.monotonic()
+        party_program = PartyProgram()
 
         while True:
             with self.lock:
                 if not self.effect_running:
                     return
                 status = dict(self.ceiling_status)
+                mode = self.effect_mode
 
-            now = time.monotonic()
-            elapsed = now - last_update
-            last_update = now
-
-            speed = self._percent(status.get("speed", 50), minimum=1)
+            speed = self._percent(status.get("speed", 50))
             brightness = status.get("brightness", 100)
 
-            if self.effect_mode == "party":
-                seconds_per_cycle = self._party_cycle_seconds(speed)
-                hue = (hue + elapsed / seconds_per_cycle) % 1.0
-                red, green, blue = self._party_rgb(hue)
-                self.set_lightbars_rgb(red, green, blue, brightness)
+            if mode != "party":
                 time.sleep(0.05)
                 continue
 
-            seconds_per_cycle = self._slow_fade_cycle_seconds(speed)
-            hue = (hue + elapsed / seconds_per_cycle) % 1.0
+            stage = party_program.next_stage()
+            self.set_lightbar_program_chase_stage(
+                stage.programs,
+                speed,
+                brightness,
+                stage.speed_dmx
+            )
+            self._sleep_while_effect_running(
+                self._party_chase_step_seconds(speed) * stage.hold
+            )
 
-            red, green, blue = self._hsv_to_rgb(hue, 1.0, 1.0)
-            self.set_lightbars_rgb(red, green, blue, brightness)
+    @staticmethod
+    def _party_chase_step_seconds(speed):
+        speed = max(0, min(100, int(speed)))
+        if speed <= 50:
+            return 10.0 - speed * (5.0 / 50)
+
+        return 5.0 - (speed - 50) * (4.0 / 50)
+
+    def _sleep_while_effect_running(self, seconds):
+        end_time = time.monotonic() + seconds
+        while time.monotonic() < end_time:
+            with self.lock:
+                if not self.effect_running:
+                    return
             time.sleep(0.05)
-
-    @staticmethod
-    def _slow_fade_cycle_seconds(speed):
-        # 1 = sehr langsam, 100 = deutlich schneller, aber noch weich.
-        return 90 - (max(1, min(100, int(speed))) - 1) * (80 / 99)
-
-    @staticmethod
-    def _party_cycle_seconds(speed):
-        return 2.5 - (max(1, min(100, int(speed))) - 1) * (2.0 / 99)
-
-    @staticmethod
-    def _party_rgb(hue):
-        colors = [
-            (255, 0, 180),
-            (0, 120, 255),
-            (0, 255, 80),
-            (255, 255, 0),
-            (255, 0, 0),
-            (120, 0, 255),
-        ]
-        return colors[int(hue * len(colors)) % len(colors)]
 
     @staticmethod
     def _hex_to_rgb(hex_color):
@@ -234,14 +244,23 @@ class DmxLightingController:
         return round(DmxLightingController._percent(value, minimum=minimum) * 255 / 100)
 
     @staticmethod
+    def _program_speed_to_dmx(value):
+        minimum = round(255 * 0.87)
+        speed = max(0, min(100, int(value)))
+        return minimum + round(speed * (255 - minimum) / 100)
+
+    @staticmethod
+    def _party_chase_speed_to_dmx(value):
+        speed = max(0, min(100, int(value)))
+        if speed <= 50:
+            return 222 + round(speed * (18 / 50))
+
+        return 240 + round((speed - 50) * (15 / 50))
+
+    @staticmethod
     def _dmx_value(value):
         return max(0, min(255, int(value)))
 
     @staticmethod
     def _percent(value, minimum=0):
         return max(minimum, min(100, int(value)))
-
-    @staticmethod
-    def _hsv_to_rgb(hue, saturation, value):
-        red, green, blue = colorsys.hsv_to_rgb(hue, saturation, value)
-        return round(red * 255), round(green * 255), round(blue * 255)
