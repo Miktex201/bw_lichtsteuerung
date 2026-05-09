@@ -36,14 +36,23 @@ class RgbFixture:
             self.dimmer_channel: dimmer
         }
 
-    def program_values_for(self, program, speed, dimmer):
+    def program_values_for(
+        self,
+        program,
+        speed,
+        dimmer,
+        red=255,
+        green=255,
+        blue=255,
+        effect=0
+    ):
         return {
-            self.red_channel: 0,
-            self.green_channel: 0,
-            self.blue_channel: 0,
+            self.red_channel: red,
+            self.green_channel: green,
+            self.blue_channel: blue,
             self.program_channel: program,
             self.speed_channel: speed,
-            self.effect_channel: 0,
+            self.effect_channel: effect,
             self.dimmer_channel: dimmer
         }
 
@@ -134,21 +143,34 @@ class DmxLightingController:
 
         self.driver.set_channels(values)
 
-    def set_lightbar_program_chase_stage(self, stage_programs, speed, brightness=100, speed_dmx=None):
+    def set_lightbar_program_chase_stage(self, stage, speed, brightness=100):
+        speed_dmx = stage.speed_dmx
         if speed_dmx is None:
             speed = self._party_chase_speed_to_dmx(speed)
         else:
             speed = self._dmx_value(speed_dmx)
+
         dimmer_value = self._brightness_to_dmx(brightness)
+        party_dimmer = max(dimmer_value, 220)
+        active_rgb = tuple(self._dmx_value(value) for value in stage.rgb)
+        inactive_rgb = tuple(self._dmx_value(value) for value in stage.inactive_rgb)
+        inactive_dimmer = self._dmx_value(stage.inactive_dimmer)
+        effect = self._dmx_value(stage.effect_dmx)
 
         values = {}
         for index, fixture in enumerate(self.lightbars):
-            program = stage_programs.get(index)
+            program = stage.programs.get(index)
             if program is not None:
                 program = self._dmx_value(program)
-                values.update(fixture.program_values_for(program, speed, dimmer_value))
+                values.update(fixture.program_values_for(
+                    program,
+                    speed,
+                    party_dimmer,
+                    *active_rgb,
+                    effect=effect
+                ))
             else:
-                values.update(fixture.values_for(0, 0, 0, 0))
+                values.update(fixture.values_for(*inactive_rgb, inactive_dimmer))
 
         self.driver.set_channels(values)
 
@@ -198,10 +220,9 @@ class DmxLightingController:
 
             stage = party_program.next_stage()
             self.set_lightbar_program_chase_stage(
-                stage.programs,
+                stage,
                 speed,
-                brightness,
-                stage.speed_dmx
+                brightness
             )
             self._sleep_while_effect_running(
                 self._party_chase_step_seconds(speed) * stage.hold

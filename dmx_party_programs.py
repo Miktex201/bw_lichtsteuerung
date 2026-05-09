@@ -30,6 +30,10 @@ class PartyStage:
     programs: dict
     hold: float = 1.0
     speed_dmx: int = None
+    effect_dmx: int = 253
+    rgb: tuple = (255, 255, 255)
+    inactive_rgb: tuple = (0, 0, 0)
+    inactive_dimmer: int = 0
 
 
 @dataclass(frozen=True)
@@ -39,65 +43,114 @@ class PartyPattern:
     repeats: int = 1
 
 
-def stage(lightbars, program=PROGRAM_RED_STRIPE, hold=1.0, speed_dmx=None):
+def stage(
+    lightbars,
+    program=PROGRAM_RED_STRIPE,
+    hold=1.0,
+    speed_dmx=None,
+    effect_dmx=253,
+    rgb=(255, 255, 255),
+    inactive_rgb=(0, 0, 0),
+    inactive_dimmer=0
+):
     return PartyStage(
         programs={LIGHTBAR_INDEX[number]: program for number in lightbars},
         hold=hold,
-        speed_dmx=speed_dmx
+        speed_dmx=speed_dmx,
+        effect_dmx=effect_dmx,
+        rgb=rgb,
+        inactive_rgb=inactive_rgb,
+        inactive_dimmer=inactive_dimmer
     )
 
 
-def color_stage(assignments, hold=1.0, speed_dmx=None):
+def color_stage(
+    assignments,
+    hold=1.0,
+    speed_dmx=None,
+    effect_dmx=253,
+    rgb=(255, 255, 255),
+    inactive_rgb=(0, 0, 0),
+    inactive_dimmer=0
+):
     return PartyStage(
         programs={
             LIGHTBAR_INDEX[number]: program
             for number, program in assignments.items()
         },
         hold=hold,
-        speed_dmx=speed_dmx
+        speed_dmx=speed_dmx,
+        effect_dmx=effect_dmx,
+        rgb=rgb,
+        inactive_rgb=inactive_rgb,
+        inactive_dimmer=inactive_dimmer
     )
 
 
 PARTY_PATTERNS = (
     PartyPattern(
+        name="outside_inside_color_wave",
+        stages=(
+            stage((1, 2, 3, 4, 5, 6), PROGRAM_OUTSIDE_INSIDE, hold=1.4, speed_dmx=SPEED_OUTSIDE_INSIDE),
+        ),
+    ),
+    PartyPattern(
+        name="full_mode_126",
+        stages=(
+            stage((1, 2, 3, 4, 5, 6), PROGRAM_FULL_MODE, hold=1.4, speed_dmx=SPEED_FULL_MODE),
+        ),
+    ),
+    PartyPattern(
+        name="colorful_program_152",
+        stages=(
+            stage((1, 2, 3, 4, 5, 6), PROGRAM_COLOR_VARIANT, hold=1.4, speed_dmx=SPEED_COLORFUL),
+        ),
+    ),
+    PartyPattern(
+        name="split_color_program_165",
+        stages=(
+            stage((1, 2, 3, 4, 5, 6), PROGRAM_COLOR_VARIANT, hold=1.4, speed_dmx=SPEED_SPLIT_COLOR),
+        ),
+    ),
+    PartyPattern(
         name="red_stripe_from_heads",
         stages=(
-            stage((1, 2)),
-            stage((3, 4)),
-            stage((5, 6)),
-            stage((3, 4)),
+            stage((1, 2), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((3, 4), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((5, 6), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((3, 4), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
         ),
         repeats=2,
     ),
     PartyPattern(
         name="red_stripe_around_clockwise",
         stages=(
-            stage((1,)),
-            stage((3,)),
-            stage((5,)),
-            stage((6,)),
-            stage((4,)),
-            stage((2,)),
+            stage((1,), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((3,), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((5,), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((6,), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((4,), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((2,), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
         ),
     ),
     PartyPattern(
         name="red_stripe_around_counter",
         stages=(
-            stage((2,)),
-            stage((4,)),
-            stage((6,)),
-            stage((5,)),
-            stage((3,)),
-            stage((1,)),
+            stage((2,), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((4,), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((6,), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((5,), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((3,), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((1,), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
         ),
     ),
     PartyPattern(
         name="red_stripe_cross",
         stages=(
-            stage((1, 6)),
-            stage((3, 4)),
-            stage((5, 2)),
-            stage((3, 4)),
+            stage((1, 6), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((3, 4), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((5, 2), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
+            stage((3, 4), rgb=(255, 0, 0), inactive_rgb=(20, 0, 0), inactive_dimmer=90),
         ),
         repeats=2,
     ),
@@ -113,33 +166,9 @@ PARTY_PATTERNS = (
         ),
     ),
     PartyPattern(
-        name="outside_inside_color_wave",
-        stages=(
-            stage((1, 2, 3, 4, 5, 6), PROGRAM_OUTSIDE_INSIDE, hold=3.0, speed_dmx=SPEED_OUTSIDE_INSIDE),
-        ),
-    ),
-    PartyPattern(
-        name="colorful_program_152",
-        stages=(
-            stage((1, 2, 3, 4, 5, 6), PROGRAM_COLOR_VARIANT, hold=3.0, speed_dmx=SPEED_COLORFUL),
-        ),
-    ),
-    PartyPattern(
-        name="split_color_program_165",
-        stages=(
-            stage((1, 2, 3, 4, 5, 6), PROGRAM_COLOR_VARIANT, hold=3.0, speed_dmx=SPEED_SPLIT_COLOR),
-        ),
-    ),
-    PartyPattern(
-        name="full_mode_126",
-        stages=(
-            stage((1, 2, 3, 4, 5, 6), PROGRAM_FULL_MODE, hold=3.0, speed_dmx=SPEED_FULL_MODE),
-        ),
-    ),
-    PartyPattern(
         name="all_hit",
         stages=(
-            stage((1, 2, 3, 4, 5, 6), hold=1.5),
+            stage((1, 2, 3, 4, 5, 6), hold=1.0),
             stage((), hold=0.5),
         ),
     ),
