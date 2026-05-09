@@ -23,6 +23,7 @@ if __name__ == "__main__":
 
     dmx_driver = DmxSerialDriver(
         device=os.environ.get("LICHT_DMX_DEVICE", "/dev/ttyUSB0"),
+        fps=int(os.environ.get("LICHT_DMX_FPS", "44")),
         enabled=dmx_enabled
     )
     lighting_controller = DmxLightingController(dmx_driver)

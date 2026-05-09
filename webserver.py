@@ -163,8 +163,13 @@ class SimpleWebServer:
 
         @self.app.route('/dmx/manual', methods=['GET'])
         def get_manual_dmx():
+            protected_channels = []
+            if self.lighting_controller:
+                protected_channels = sorted(self.lighting_controller.lightbar_channels)
+
             return jsonify({
                 "channels": self.manual_dmx_values,
+                "protected_channels": protected_channels,
                 "max_channel": 255
             })
 
@@ -186,12 +191,12 @@ class SimpleWebServer:
                     updates[channel_number] = channel_value
 
             if updates and self.lighting_controller:
-                self.status["barlichtdecke"]["on"] = True
                 self.lighting_controller.set_manual_channels(updates)
 
             return jsonify({
                 "channels": self.manual_dmx_values,
                 "updated": updates,
+                "protected_channels": sorted(self.lighting_controller.lightbar_channels) if self.lighting_controller else [],
                 "max_channel": 255
             })
 

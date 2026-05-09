@@ -4,10 +4,11 @@ import time
 
 
 class DmxSerialDriver:
-    def __init__(self, device="/dev/ttyUSB0", channels=512, fps=30, enabled=None):
+    def __init__(self, device="/dev/ttyUSB0", channels=512, fps=44, enabled=None):
         self.device = device
         self.channels = channels
-        self.frame_time = 1 / fps
+        self.fps = max(1, min(44, int(fps)))
+        self.frame_time = 1 / self.fps
         self.data = bytearray([0] * channels)
         self.lock = threading.Lock()
         self.serial = None
@@ -41,7 +42,7 @@ class DmxSerialDriver:
         self.running = True
         self.thread = threading.Thread(target=self._send_loop, daemon=True)
         self.thread.start()
-        print(f"DMX-Ausgabe gestartet auf {self.device}")
+        print(f"DMX-Ausgabe gestartet auf {self.device} mit {self.fps} FPS")
 
     def set_channel(self, channel, value):
         if not 1 <= channel <= self.channels:
