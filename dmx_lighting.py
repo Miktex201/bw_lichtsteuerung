@@ -1,39 +1,42 @@
 import threading
 import time
 
-from dmx_party_programs import PartyProgram
+from dmx_party_programs import PartyProgram, PROGRAM_SLOW_FADE
 
 
 class RgbFixture:
     def __init__(
         self,
         name,
+        dimmer_channel,
         red_channel,
         green_channel,
         blue_channel,
         program_channel,
         speed_channel,
-        effect_channel,
-        dimmer_channel
+        fade_channel,
+        flash_channel
     ):
         self.name = name
+        self.dimmer_channel = dimmer_channel
         self.red_channel = red_channel
         self.green_channel = green_channel
         self.blue_channel = blue_channel
         self.program_channel = program_channel
         self.speed_channel = speed_channel
-        self.effect_channel = effect_channel
-        self.dimmer_channel = dimmer_channel
+        self.fade_channel = fade_channel
+        self.flash_channel = flash_channel
 
     def values_for(self, red, green, blue, dimmer):
         return {
+            self.dimmer_channel: dimmer,
             self.red_channel: red,
             self.green_channel: green,
             self.blue_channel: blue,
             self.program_channel: 0,
             self.speed_channel: 0,
-            self.effect_channel: 0,
-            self.dimmer_channel: dimmer
+            self.fade_channel: 0,
+            self.flash_channel: 0
         }
 
     def program_values_for(
@@ -44,16 +47,18 @@ class RgbFixture:
         red=255,
         green=255,
         blue=255,
-        effect=0
+        fade=0,
+        flash=0
     ):
         return {
+            self.dimmer_channel: dimmer,
             self.red_channel: red,
             self.green_channel: green,
             self.blue_channel: blue,
             self.program_channel: program,
             self.speed_channel: speed,
-            self.effect_channel: effect,
-            self.dimmer_channel: dimmer
+            self.fade_channel: fade,
+            self.flash_channel: flash
         }
 
 
@@ -66,24 +71,25 @@ class DmxLightingController:
         self.effect_running = False
         self.effect_thread = None
         self.lightbars = [
-            RgbFixture("Lightbar 1", 33, 34, 35, 36, 37, 38, 39),
-            RgbFixture("Lightbar 2", 43, 44, 45, 46, 47, 48, 49),
-            RgbFixture("Lightbar 3", 53, 54, 55, 56, 57, 58, 59),
-            RgbFixture("Lightbar 4", 63, 64, 65, 66, 67, 68, 69),
-            RgbFixture("Lightbar 5", 73, 74, 75, 76, 77, 78, 79),
-            RgbFixture("Lightbar 6", 83, 84, 85, 86, 87, 88, 89),
+            RgbFixture("Lightbar 1", 33, 34, 35, 36, 37, 38, 39, 40),
+            RgbFixture("Lightbar 2", 49, 50, 51, 52, 53, 54, 55, 56),
+            RgbFixture("Lightbar 3", 65, 66, 67, 68, 69, 70, 71, 72),
+            RgbFixture("Lightbar 4", 81, 82, 83, 84, 85, 86, 87, 88),
+            RgbFixture("Lightbar 5", 97, 98, 99, 100, 101, 102, 103, 104),
+            RgbFixture("Lightbar 6", 113, 114, 115, 116, 117, 118, 119, 120),
         ]
         self.lightbar_channels = {
             channel
             for fixture in self.lightbars
             for channel in (
+                fixture.dimmer_channel,
                 fixture.red_channel,
                 fixture.green_channel,
                 fixture.blue_channel,
                 fixture.program_channel,
                 fixture.speed_channel,
-                fixture.effect_channel,
-                fixture.dimmer_channel
+                fixture.fade_channel,
+                fixture.flash_channel
             )
         }
 
@@ -118,7 +124,7 @@ class DmxLightingController:
 
         if mode == "slow_fade":
             self._stop_effect()
-            self.set_lightbars_program(195, status.get("speed", 50), brightness)
+            self.set_lightbars_program(PROGRAM_SLOW_FADE, status.get("speed", 50), brightness)
 
     def set_lightbars_rgb(self, red, green, blue, brightness=100):
         red = self._dmx_value(red)
@@ -132,14 +138,15 @@ class DmxLightingController:
         
         self.driver.set_channels(values)
 
-    def set_lightbars_program(self, program, speed, brightness=100):
+    def set_lightbars_program(self, program, speed, brightness=100, fade=253):
         program = self._dmx_value(program)
         speed = self._program_speed_to_dmx(speed)
         dimmer_value = self._brightness_to_dmx(brightness)
+        fade = self._dmx_value(fade)
 
         values = {}
         for fixture in self.lightbars:
-            values.update(fixture.program_values_for(program, speed, dimmer_value))
+            values.update(fixture.program_values_for(program, speed, dimmer_value, fade=fade))
 
         self.driver.set_channels(values)
 
@@ -155,7 +162,7 @@ class DmxLightingController:
         active_rgb = tuple(self._dmx_value(value) for value in stage.rgb)
         inactive_rgb = tuple(self._dmx_value(value) for value in stage.inactive_rgb)
         inactive_dimmer = self._dmx_value(stage.inactive_dimmer)
-        effect = self._dmx_value(stage.effect_dmx)
+        fade = self._dmx_value(stage.fade_dmx)
 
         values = {}
         for index, fixture in enumerate(self.lightbars):
@@ -167,7 +174,7 @@ class DmxLightingController:
                     speed,
                     party_dimmer,
                     *active_rgb,
-                    effect=effect
+                    fade=fade
                 ))
             else:
                 values.update(fixture.values_for(*inactive_rgb, inactive_dimmer))
@@ -266,17 +273,11 @@ class DmxLightingController:
 
     @staticmethod
     def _program_speed_to_dmx(value):
-        minimum = round(255 * 0.87)
-        speed = max(0, min(100, int(value)))
-        return minimum + round(speed * (255 - minimum) / 100)
+        return DmxLightingController._percent_to_dmx(value)
 
     @staticmethod
     def _party_chase_speed_to_dmx(value):
-        speed = max(0, min(100, int(value)))
-        if speed <= 50:
-            return 222 + round(speed * (18 / 50))
-
-        return 240 + round((speed - 50) * (15 / 50))
+        return DmxLightingController._percent_to_dmx(value)
 
     @staticmethod
     def _dmx_value(value):

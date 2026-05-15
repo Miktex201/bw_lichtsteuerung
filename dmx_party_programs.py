@@ -11,18 +11,19 @@ LIGHTBAR_INDEX = {
 }
 
 
-PROGRAM_RED_STRIPE = 96
-PROGRAM_OUTSIDE_INSIDE = 140
-PROGRAM_COLOR_VARIANT = 140
-PROGRAM_FULL_MODE = 126
+PROGRAM_RED_STRIPE = 94
+PROGRAM_OUTSIDE_INSIDE = 143
+PROGRAM_COLOR_VARIANT = 143
+PROGRAM_FULL_MODE = 129
+PROGRAM_SLOW_FADE = 192
 SPEED_OUTSIDE_INSIDE = 253
 SPEED_COLORFUL = 152
 SPEED_SPLIT_COLOR = 165
 SPEED_FULL_MODE = 254
 
 # Placeholder program values for other internal Lightbar programs.
-# Tune these values once you know which CH4 ranges trigger the best colors.
-PROGRAM_COLOR_WHEEL = [96, 112, 128, 144, 160, 176]
+# Tune these values once you know which CH5 ranges trigger the best colors.
+PROGRAM_COLOR_WHEEL = [94, 108, 122, 136, 150, 164]
 
 
 @dataclass(frozen=True)
@@ -30,7 +31,7 @@ class PartyStage:
     programs: dict
     hold: float = 1.0
     speed_dmx: int = None
-    effect_dmx: int = 253
+    fade_dmx: int = 253
     rgb: tuple = (255, 255, 255)
     inactive_rgb: tuple = (0, 0, 0)
     inactive_dimmer: int = 0
@@ -48,7 +49,7 @@ def stage(
     program=PROGRAM_RED_STRIPE,
     hold=1.0,
     speed_dmx=None,
-    effect_dmx=253,
+    fade_dmx=253,
     rgb=(255, 255, 255),
     inactive_rgb=(0, 0, 0),
     inactive_dimmer=0
@@ -57,7 +58,7 @@ def stage(
         programs={LIGHTBAR_INDEX[number]: program for number in lightbars},
         hold=hold,
         speed_dmx=speed_dmx,
-        effect_dmx=effect_dmx,
+        fade_dmx=fade_dmx,
         rgb=rgb,
         inactive_rgb=inactive_rgb,
         inactive_dimmer=inactive_dimmer
@@ -68,7 +69,7 @@ def color_stage(
     assignments,
     hold=1.0,
     speed_dmx=None,
-    effect_dmx=253,
+    fade_dmx=253,
     rgb=(255, 255, 255),
     inactive_rgb=(0, 0, 0),
     inactive_dimmer=0
@@ -80,7 +81,7 @@ def color_stage(
         },
         hold=hold,
         speed_dmx=speed_dmx,
-        effect_dmx=effect_dmx,
+        fade_dmx=fade_dmx,
         rgb=rgb,
         inactive_rgb=inactive_rgb,
         inactive_dimmer=inactive_dimmer
