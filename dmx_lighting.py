@@ -62,6 +62,24 @@ class RgbFixture:
         }
 
 
+class MovingHeadFixture:
+    def __init__(self, name, start_channel):
+        self.name = name
+        self.start_channel = start_channel
+
+    def values_for(self, pan, tilt, color, pan_fine=0, tilt_fine=0):
+        return {
+            self.start_channel: pan,
+            self.start_channel + 1: pan_fine,
+            self.start_channel + 2: tilt,
+            self.start_channel + 3: tilt_fine,
+            self.start_channel + 4: color,
+            self.start_channel + 5: 17,
+            self.start_channel + 6: 255,
+            self.start_channel + 7: 255
+        }
+
+
 class DmxLightingController:
     def __init__(self, driver):
         self.driver = driver
@@ -78,6 +96,20 @@ class DmxLightingController:
             RgbFixture("Lightbar 5", 97, 98, 99, 100, 101, 102, 103, 104),
             RgbFixture("Lightbar 6", 113, 114, 115, 116, 117, 118, 119, 120),
         ]
+        self.moving_heads = [
+            MovingHeadFixture("MovingHead 1", 1),
+            MovingHeadFixture("MovingHead 2", 17),
+        ]
+        self.moving_head_scenes = (
+            ((28, 70, 50), (228, 70, 66), 1.0),
+            ((70, 108, 42), (186, 108, 82), 1.0),
+            ((120, 42, 100), (136, 42, 116), 0.8),
+            ((186, 122, 66), (70, 122, 50), 1.0),
+            ((228, 84, 82), (28, 84, 42), 0.9),
+            ((128, 140, 130), (128, 28, 130), 1.2),
+            ((48, 52, 116), (208, 132, 100), 1.0),
+            ((208, 132, 27), (48, 52, 50), 1.0),
+        )
         self.lightbar_channels = {
             channel
             for fixture in self.lightbars
@@ -107,6 +139,7 @@ class DmxLightingController:
         if not status.get("on"):
             self._stop_effect()
             self.set_lightbars_rgb(0, 0, 0, 0)
+            self.set_moving_heads_blackout()
             return
 
         mode = status.get("mode", "static")
@@ -114,6 +147,7 @@ class DmxLightingController:
 
         if mode == "static":
             self._stop_effect()
+            self.set_moving_heads_blackout()
             red, green, blue = self._hex_to_rgb(status.get("color", "#ff0000"))
             self.set_lightbars_rgb(red, green, blue, brightness)
             return
@@ -124,6 +158,7 @@ class DmxLightingController:
 
         if mode == "slow_fade":
             self._stop_effect()
+            self.set_moving_heads_blackout()
             self.set_lightbars_program(PROGRAM_SLOW_FADE, status.get("speed", 50), brightness)
 
     def set_lightbars_rgb(self, red, green, blue, brightness=100):
@@ -181,6 +216,29 @@ class DmxLightingController:
 
         self.driver.set_channels(values)
 
+    def set_moving_head_scene(self, scene, next_scene, progress):
+        values = {}
+        eased_progress = self._ease_in_out(progress)
+
+        for fixture, current, target in zip(self.moving_heads, scene[:2], next_scene[:2]):
+            pan = self._interpolate_dmx(current[0], target[0], eased_progress)
+            tilt = self._interpolate_dmx(current[1], target[1], eased_progress)
+            color = current[2]
+            values.update(fixture.values_for(pan, tilt, color))
+
+        self.driver.set_channels(values)
+
+    def set_moving_heads_blackout(self):
+        values = {}
+        for fixture in self.moving_heads:
+            values.update({
+                fixture.start_channel + 5: 17,
+                fixture.start_channel + 6: 255,
+                fixture.start_channel + 7: 0
+            })
+
+        self.driver.set_channels(values)
+
     def set_manual_channels(self, values):
         self._stop_effect()
         self.driver.set_channels(values)
@@ -210,6 +268,9 @@ class DmxLightingController:
 
     def _effect_loop(self):
         party_program = PartyProgram()
+        moving_scene_index = 0
+        moving_scene_started = time.monotonic()
+        next_lightbar_stage_at = 0
 
         while True:
             with self.lock:
@@ -225,15 +286,27 @@ class DmxLightingController:
                 time.sleep(0.05)
                 continue
 
-            stage = party_program.next_stage()
-            self.set_lightbar_program_chase_stage(
-                stage,
-                speed,
-                brightness
-            )
-            self._sleep_while_effect_running(
-                self._party_chase_step_seconds(speed) * stage.hold
-            )
+            now = time.monotonic()
+            if now >= next_lightbar_stage_at:
+                stage = party_program.next_stage()
+                self.set_lightbar_program_chase_stage(stage, speed, brightness)
+                next_lightbar_stage_at = now + self._party_chase_step_seconds(speed) * stage.hold
+
+            scene = self.moving_head_scenes[moving_scene_index % len(self.moving_head_scenes)]
+            next_scene = self.moving_head_scenes[(moving_scene_index + 1) % len(self.moving_head_scenes)]
+            scene_seconds = self._moving_head_scene_seconds(speed) * scene[2]
+            progress = (now - moving_scene_started) / scene_seconds
+
+            if progress >= 1:
+                moving_scene_index += 1
+                moving_scene_started = now
+                progress = 0
+                scene = self.moving_head_scenes[moving_scene_index % len(self.moving_head_scenes)]
+                next_scene = self.moving_head_scenes[(moving_scene_index + 1) % len(self.moving_head_scenes)]
+
+            self.set_moving_head_scene(scene, next_scene, progress)
+
+            time.sleep(0.04)
 
     @staticmethod
     def _party_chase_step_seconds(speed):
@@ -242,6 +315,14 @@ class DmxLightingController:
             return 10.0 - speed * (5.0 / 50)
 
         return 5.0 - (speed - 50) * (4.0 / 50)
+
+    @staticmethod
+    def _moving_head_scene_seconds(speed):
+        speed = max(0, min(100, int(speed)))
+        if speed <= 50:
+            return 8.0 - speed * (4.5 / 50)
+
+        return 3.5 - (speed - 50) * (2.3 / 50)
 
     def _sleep_while_effect_running(self, seconds):
         end_time = time.monotonic() + seconds
@@ -286,3 +367,13 @@ class DmxLightingController:
     @staticmethod
     def _percent(value, minimum=0):
         return max(minimum, min(100, int(value)))
+
+    @staticmethod
+    def _interpolate_dmx(start, end, progress):
+        progress = max(0.0, min(1.0, float(progress)))
+        return DmxLightingController._dmx_value(round(start + (end - start) * progress))
+
+    @staticmethod
+    def _ease_in_out(progress):
+        progress = max(0.0, min(1.0, float(progress)))
+        return progress * progress * (3 - 2 * progress)
