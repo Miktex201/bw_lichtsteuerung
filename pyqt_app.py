@@ -21,6 +21,7 @@ try:
         QLineEdit,
         QMainWindow,
         QPushButton,
+        QSizePolicy,
         QSlider,
         QStackedWidget,
         QVBoxLayout,
@@ -294,7 +295,6 @@ class HomePage(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        layout.addStretch(1)
 
         button_row = QHBoxLayout()
         button_row.setSpacing(18)
@@ -304,12 +304,11 @@ class HomePage(QWidget):
         self._add_home_button(button_row, "Bauwagenlogo", window.logo_page)
         self._add_home_button(button_row, "Diskolicht Decke", window.ceiling_page)
 
-        layout.addStretch(1)
-
     def _add_home_button(self, layout, text, page):
         button = QPushButton(text)
         button.setMinimumSize(0, 0)
-        button.setFont(QFont(button.font().family(), 22, QFont.Bold))
+        button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        button.setFont(QFont(button.font().family(), 24, QFont.Bold))
         button.clicked.connect(lambda: self.window.stack.setCurrentWidget(page))
         layout.addWidget(button, 1)
 
@@ -469,10 +468,8 @@ class CeilingPage(QWidget):
         self.current_color = "#ff0000"
         self.current_mode = "static"
 
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(7)
-        outer.addWidget(title_label("Diskolicht Decke"), alignment=Qt.AlignCenter)
+        layout = centered_panel(self)
+        layout.addWidget(title_label("Diskolicht Decke"))
 
         power_row = QHBoxLayout()
         self.on_button = check_button("An")
@@ -484,11 +481,11 @@ class CeilingPage(QWidget):
         power_row.addWidget(self.on_button)
         power_row.addWidget(self.off_button)
         power_row.addStretch(1)
-        outer.addLayout(power_row)
+        layout.addLayout(power_row)
 
         body = QHBoxLayout()
         body.setSpacing(18)
-        outer.addLayout(body)
+        layout.addLayout(body)
 
         color_column = QVBoxLayout()
         color_column.setSpacing(7)
@@ -542,7 +539,7 @@ class CeilingPage(QWidget):
         settings.setFixedSize(48, 42)
         settings.clicked.connect(window.show_dmx)
         bottom.addWidget(settings)
-        outer.addLayout(bottom)
+        layout.addLayout(bottom)
 
         self.update_mode_ui()
 
