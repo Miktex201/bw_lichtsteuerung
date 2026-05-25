@@ -22,7 +22,7 @@ if __name__ == "__main__":
         dmx_enabled = dmx_enabled == "1"
 
     dmx_driver = DmxSerialDriver(
-        device=os.environ.get("LICHT_DMX_DEVICE", "/dev/ttyUSB0"),
+        device=os.environ.get("LICHT_DMX_DEVICE", "COM34"),
         fps=int(os.environ.get("LICHT_DMX_FPS", "44")),
         enabled=dmx_enabled
     )
