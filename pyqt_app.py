@@ -41,9 +41,9 @@ APP_STYLE = """
 QPushButton {
     background: rgba(255, 255, 255, 22);
     border: 1px solid rgba(255, 255, 255, 55);
-    border-radius: 16px;
-    padding: 12px 22px;
-    font-size: 18px;
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 15px;
     font-weight: 600;
 }
 QPushButton:hover {
@@ -59,34 +59,34 @@ QPushButton:disabled {
     background: rgba(255, 255, 255, 14);
 }
 QLabel#title {
-    font-size: 34px;
+    font-size: 26px;
     font-weight: 700;
     letter-spacing: 1px;
 }
 QLabel#subtitle {
     color: rgba(248, 250, 252, 215);
-    font-size: 18px;
+    font-size: 14px;
 }
 QLabel#sectionLabel {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 600;
 }
 QFrame#screen {
     background: rgba(255, 255, 255, 20);
     border: 1px solid rgba(255, 255, 255, 36);
-    border-radius: 32px;
+    border-radius: 22px;
 }
 QFrame#dmxRow {
     background: rgba(255, 255, 255, 20);
     border: 1px solid rgba(255, 255, 255, 46);
-    border-radius: 16px;
+    border-radius: 10px;
 }
 QLineEdit {
     background: rgba(15, 23, 42, 96);
     border: 1px solid rgba(248, 250, 252, 76);
-    border-radius: 12px;
-    padding: 8px;
-    font-size: 17px;
+    border-radius: 8px;
+    padding: 5px;
+    font-size: 15px;
     font-weight: 700;
 }
 QSlider::groove:horizontal {
@@ -131,10 +131,11 @@ class ColorWheel(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(260, 260)
+        self.wheel_size = 190
+        self.setFixedSize(self.wheel_size, self.wheel_size)
         self.setCursor(Qt.PointingHandCursor)
-        self.image = self._build_image(260)
-        self.selector = QPointF(238, 130)
+        self.image = self._build_image(self.wheel_size)
+        self.selector = QPointF(self.wheel_size - 12, self.wheel_size / 2)
         self.enabled_for_pick = True
 
     def set_pick_enabled(self, enabled):
@@ -234,16 +235,16 @@ class MainWindow(QMainWindow):
         self.manual_dmx_values = {channel: 0 for channel in range(1, 256)}
 
         self.setWindowTitle("Barlicht Steuerung")
-        self.resize(1180, 760)
+        self.resize(1024, 600)
 
         root = AppBackground()
         root_layout = QVBoxLayout(root)
-        root_layout.setContentsMargins(28, 28, 28, 28)
+        root_layout.setContentsMargins(12, 12, 12, 12)
 
         self.screen = QFrame()
         self.screen.setObjectName("screen")
         screen_layout = QVBoxLayout(self.screen)
-        screen_layout.setContentsMargins(36, 36, 36, 36)
+        screen_layout.setContentsMargins(18, 14, 18, 14)
 
         self.stack = QStackedWidget()
         screen_layout.addWidget(self.stack)
@@ -295,7 +296,7 @@ class HomePage(QWidget):
         layout.addStretch(1)
 
         button_row = QHBoxLayout()
-        button_row.setSpacing(24)
+        button_row.setSpacing(16)
         layout.addLayout(button_row)
 
         self._add_home_button(button_row, "Barlicht innen", window.inside_page)
@@ -306,8 +307,8 @@ class HomePage(QWidget):
 
     def _add_home_button(self, layout, text, page):
         button = QPushButton(text)
-        button.setMinimumSize(280, 180)
-        button.setFont(QFont(button.font().family(), 24, QFont.Bold))
+        button.setMinimumSize(240, 130)
+        button.setFont(QFont(button.font().family(), 20, QFont.Bold))
         button.clicked.connect(lambda: self.window.stack.setCurrentWidget(page))
         layout.addWidget(button)
 
@@ -374,11 +375,11 @@ class LogoPage(QWidget):
         layout.addLayout(power_row)
 
         body = QHBoxLayout()
-        body.setSpacing(28)
+        body.setSpacing(18)
         layout.addLayout(body)
 
         color_column = QVBoxLayout()
-        color_column.setSpacing(12)
+        color_column.setSpacing(7)
         color_column.addWidget(section_label("Farbe waehlen"), alignment=Qt.AlignCenter)
         color_column.addWidget(subtitle_label("Aktiv bei Statisch und Pulsierend"), alignment=Qt.AlignCenter)
         self.wheel = ColorWheel()
@@ -389,7 +390,7 @@ class LogoPage(QWidget):
         body.addLayout(color_column)
 
         controls = QVBoxLayout()
-        controls.setSpacing(12)
+        controls.setSpacing(7)
         controls.addWidget(section_label("Modus"), alignment=Qt.AlignCenter)
         self.mode_buttons = self.create_mode_buttons(
             controls,
@@ -469,6 +470,7 @@ class CeilingPage(QWidget):
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(8)
         outer.addWidget(title_label("Diskolicht Decke"), alignment=Qt.AlignCenter)
         outer.addWidget(subtitle_label("Steuere die Deckenbeleuchtung der Bar"), alignment=Qt.AlignCenter)
 
@@ -485,11 +487,11 @@ class CeilingPage(QWidget):
         outer.addLayout(power_row)
 
         body = QHBoxLayout()
-        body.setSpacing(28)
+        body.setSpacing(18)
         outer.addLayout(body)
 
         color_column = QVBoxLayout()
-        color_column.setSpacing(12)
+        color_column.setSpacing(7)
         color_column.addWidget(section_label("Farbe waehlen"), alignment=Qt.AlignCenter)
         color_column.addWidget(subtitle_label("Nur bei statischem Licht aktiv"), alignment=Qt.AlignCenter)
         self.wheel = ColorWheel()
@@ -500,7 +502,7 @@ class CeilingPage(QWidget):
         body.addLayout(color_column)
 
         controls = QVBoxLayout()
-        controls.setSpacing(12)
+        controls.setSpacing(7)
         controls.addWidget(section_label("Modus"), alignment=Qt.AlignCenter)
         self.mode_group = QButtonGroup(self)
         self.mode_group.setExclusive(True)
@@ -536,7 +538,7 @@ class CeilingPage(QWidget):
         bottom.addStretch(1)
         bottom.addWidget(back_button(window.show_home, "Zurueck zur Startseite"))
         settings = QPushButton("DMX")
-        settings.setFixedSize(54, 54)
+        settings.setFixedSize(48, 42)
         settings.clicked.connect(window.show_dmx)
         bottom.addWidget(settings)
         outer.addLayout(bottom)
@@ -606,13 +608,13 @@ class DmxPage(QWidget):
 
         nav = QHBoxLayout()
         self.prev_button = QPushButton("<")
-        self.prev_button.setFixedSize(58, 58)
+        self.prev_button.setFixedSize(46, 42)
         self.prev_button.clicked.connect(self.previous_page)
         self.range_label = QLabel()
         self.range_label.setObjectName("title")
         self.range_label.setAlignment(Qt.AlignCenter)
         self.next_button = QPushButton(">")
-        self.next_button.setFixedSize(58, 58)
+        self.next_button.setFixedSize(46, 42)
         self.next_button.clicked.connect(self.next_page)
         nav.addWidget(self.prev_button)
         nav.addWidget(self.range_label, 1)
@@ -620,20 +622,20 @@ class DmxPage(QWidget):
         layout.addLayout(nav)
 
         self.rows_layout = QVBoxLayout()
-        self.rows_layout.setSpacing(12)
+        self.rows_layout.setSpacing(6)
         layout.addLayout(self.rows_layout)
 
         for _ in range(self.channels_per_page):
             row_frame = QFrame()
             row_frame.setObjectName("dmxRow")
             row = QHBoxLayout(row_frame)
-            row.setContentsMargins(16, 12, 16, 12)
+            row.setContentsMargins(10, 5, 10, 5)
             label = QLabel()
-            label.setMinimumWidth(72)
-            label.setFont(QFont(label.font().family(), 18, QFont.Bold))
+            label.setMinimumWidth(58)
+            label.setFont(QFont(label.font().family(), 15, QFont.Bold))
             slider = value_slider(0, 255, 0)
             number = QLineEdit("0")
-            number.setFixedWidth(76)
+            number.setFixedWidth(62)
             number.setAlignment(Qt.AlignCenter)
             row.addWidget(label)
             row.addWidget(slider, 1)
@@ -698,11 +700,11 @@ class DmxPage(QWidget):
 
 def centered_panel(widget):
     layout = QVBoxLayout(widget)
-    layout.setContentsMargins(110, 10, 110, 10)
-    layout.setSpacing(18)
+    layout.setContentsMargins(70, 0, 70, 0)
+    layout.setSpacing(10)
     layout.addStretch(1)
     panel = QVBoxLayout()
-    panel.setSpacing(18)
+    panel.setSpacing(10)
     layout.addLayout(panel)
     layout.addStretch(1)
     return panel
@@ -733,13 +735,14 @@ def section_label(text):
 def check_button(text):
     button = QPushButton(text)
     button.setCheckable(True)
-    button.setMinimumHeight(50)
+    button.setMinimumHeight(42)
     return button
 
 
 def back_button(callback, text="Zurueck zur Startseite"):
     button = QPushButton(text)
-    button.setMinimumWidth(220)
+    button.setMinimumWidth(190)
+    button.setMinimumHeight(38)
     button.clicked.connect(callback)
     return button
 
@@ -748,7 +751,7 @@ def value_slider(minimum, maximum, value):
     slider = QSlider(Qt.Horizontal)
     slider.setRange(minimum, maximum)
     slider.setValue(value)
-    slider.setMinimumWidth(260)
+    slider.setMinimumWidth(210)
     return slider
 
 
