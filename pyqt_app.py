@@ -96,10 +96,10 @@ QSlider::groove:horizontal {
     background: rgba(255, 255, 255, 50);
 }
 QSlider::handle:horizontal {
-    width: 24px;
-    height: 24px;
-    margin: -8px 0;
-    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    margin: -14px 0;
+    border-radius: 18px;
     background: #f8fafc;
 }
 """
