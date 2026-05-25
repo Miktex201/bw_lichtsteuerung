@@ -293,11 +293,12 @@ class HomePage(QWidget):
         self.window = window
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         layout.addStretch(1)
 
         button_row = QHBoxLayout()
-        button_row.setSpacing(16)
-        layout.addLayout(button_row)
+        button_row.setSpacing(18)
+        layout.addLayout(button_row, 1)
 
         self._add_home_button(button_row, "Barlicht innen", window.inside_page)
         self._add_home_button(button_row, "Bauwagenlogo", window.logo_page)
@@ -307,10 +308,10 @@ class HomePage(QWidget):
 
     def _add_home_button(self, layout, text, page):
         button = QPushButton(text)
-        button.setMinimumSize(240, 130)
-        button.setFont(QFont(button.font().family(), 20, QFont.Bold))
+        button.setMinimumSize(0, 0)
+        button.setFont(QFont(button.font().family(), 22, QFont.Bold))
         button.clicked.connect(lambda: self.window.stack.setCurrentWidget(page))
-        layout.addWidget(button)
+        layout.addWidget(button, 1)
 
 
 class DimmerPage(QWidget):
@@ -470,9 +471,8 @@ class CeilingPage(QWidget):
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(8)
+        outer.setSpacing(7)
         outer.addWidget(title_label("Diskolicht Decke"), alignment=Qt.AlignCenter)
-        outer.addWidget(subtitle_label("Steuere die Deckenbeleuchtung der Bar"), alignment=Qt.AlignCenter)
 
         power_row = QHBoxLayout()
         self.on_button = check_button("An")
@@ -537,6 +537,7 @@ class CeilingPage(QWidget):
         bottom = QHBoxLayout()
         bottom.addStretch(1)
         bottom.addWidget(back_button(window.show_home, "Zurueck zur Startseite"))
+        bottom.addStretch(1)
         settings = QPushButton("DMX")
         settings.setFixedSize(48, 42)
         settings.clicked.connect(window.show_dmx)
