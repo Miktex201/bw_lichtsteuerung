@@ -8,8 +8,8 @@ import time
 DEFAULT_RED_PIN = 18
 DEFAULT_GREEN_PIN = 10
 DEFAULT_BLUE_PIN = 17
-DEFAULT_FREQUENCY = 1000
-PULSE_UPDATE_SECONDS = 0.015
+DEFAULT_FREQUENCY = 500
+PULSE_UPDATE_SECONDS = 0.01
 
 
 class GpioRgbLogoController:
@@ -158,9 +158,9 @@ class GpioRgbLogoController:
 
             if mode == "pulse":
                 red, green, blue = self._hex_to_rgb(status.get("color", "#ff0000"))
-                cycle = self._cycle_seconds(speed, slow=14.0, fast=3.0)
+                cycle = self._cycle_seconds(speed, slow=9.0, fast=2.2)
                 wave = (math.sin(seconds * 2 * math.pi / cycle) + 1) / 2
-                level = 0.18 + 0.82 * wave
+                level = 0.50 + 0.70 * wave
                 scale = brightness * level * 100 / 255
                 self._set_rgb_percent(red * scale, green * scale, blue * scale)
             elif mode == "fade":
