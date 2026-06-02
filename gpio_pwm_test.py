@@ -3,7 +3,7 @@ import time
 
 
 DEFAULT_PIN = 17
-DEFAULT_RGB_PINS = (17, 27, 22)
+DEFAULT_RGB_PINS = (18, 10, 17)
 DEFAULT_FREQUENCY = 1000
 
 
@@ -112,7 +112,7 @@ def parse_args():
         nargs=3,
         metavar=("ROT", "GRUEN", "BLAU"),
         help=(
-            "drei BCM-GPIOs fuer RGB-Test, z.B. --rgb 17 27 22. "
+            "drei BCM-GPIOs fuer RGB-Test, z.B. --rgb 18 10 17. "
             f"Ohne Angabe nutzt der Einzeltest GPIO {DEFAULT_PIN}."
         ),
     )

@@ -6,10 +6,11 @@ from flask import Flask, render_template, redirect, url_for, send_from_directory
 
 
 class SimpleWebServer:
-    def __init__(self, host="127.0.0.1", port=5000, lighting_controller=None):
+    def __init__(self, host="127.0.0.1", port=5000, lighting_controller=None, logo_controller=None):
         self.host = host
         self.port = port
         self.lighting_controller = lighting_controller
+        self.logo_controller = logo_controller
         self.app = Flask(
             __name__,
             template_folder="templates",
@@ -211,11 +212,12 @@ class SimpleWebServer:
             return jsonify({"manual_active": self.manual_dmx_active})
 
     def _apply_device_status(self, device):
-        if not self.lighting_controller:
+        if device == "barlichtdecke" and self.lighting_controller:
+            self.lighting_controller.apply_ceiling_status(self.status[device])
             return
 
-        if device == "barlichtdecke":
-            self.lighting_controller.apply_ceiling_status(self.status[device])
+        if device == "barlicht_aussen" and self.logo_controller:
+            self.logo_controller.apply_status(self.status[device])
 
     def _set_manual_dmx_active(self, active):
         self.manual_dmx_active = active

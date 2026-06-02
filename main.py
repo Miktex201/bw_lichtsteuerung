@@ -4,6 +4,7 @@ import os
 
 from dmx_driver import DmxSerialDriver
 from dmx_lighting import DmxLightingController
+from gpio_logo import create_logo_controller_from_env
 from webserver import SimpleWebServer
 
 def get_light_status():
@@ -28,13 +29,16 @@ if __name__ == "__main__":
     )
     lighting_controller = DmxLightingController(dmx_driver)
     lighting_controller.start()
+    logo_controller = create_logo_controller_from_env()
 
     try:
         server = SimpleWebServer(
             host="0.0.0.0",
             port=8080,
-            lighting_controller=lighting_controller
+            lighting_controller=lighting_controller,
+            logo_controller=logo_controller
         )
         server.start()
     finally:
+        logo_controller.close()
         lighting_controller.close()

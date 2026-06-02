@@ -6,6 +6,7 @@ import sys
 
 from dmx_driver import DmxSerialDriver
 from dmx_lighting import DmxLightingController
+from gpio_logo import create_logo_controller_from_env
 
 
 try:
@@ -213,9 +214,10 @@ class ColorWheel(QWidget):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, lighting_controller):
+    def __init__(self, lighting_controller, logo_controller=None):
         super().__init__()
         self.lighting_controller = lighting_controller
+        self.logo_controller = logo_controller
         self.status = {
             "barlicht_innen": {"on": False, "brightness": 100},
             "barlicht_aussen": {
@@ -280,6 +282,14 @@ class MainWindow(QMainWindow):
     def update_ceiling(self, **updates):
         self.status["barlichtdecke"].update(updates)
         self.apply_ceiling_status()
+
+    def apply_logo_status(self):
+        if self.logo_controller:
+            self.logo_controller.apply_status(self.status["barlicht_aussen"])
+
+    def update_logo(self, **updates):
+        self.status["barlicht_aussen"].update(updates)
+        self.apply_logo_status()
 
     def set_manual_channel(self, channel, value):
         channel = max(1, min(255, int(channel)))
@@ -432,25 +442,35 @@ class LogoPage(QWidget):
     def set_power(self, on):
         self.on_button.setChecked(on)
         self.off_button.setChecked(not on)
-        self.window.status["barlicht_aussen"]["on"] = on
+        self.window.update_logo(on=on)
 
     def set_color(self, hex_color):
         self.current_color = hex_color
         self.color_value.setText(color_text(hex_color))
-        self.window.status["barlicht_aussen"]["color"] = hex_color
+        if self.current_mode in ("static", "pulse"):
+            self.window.update_logo(color=hex_color)
 
     def set_mode(self, mode):
         self.current_mode = mode
-        self.window.status["barlicht_aussen"]["mode"] = mode
+        update = {"on": True, "mode": mode}
+        if mode in ("static", "pulse"):
+            update["color"] = self.current_color
+        self.on_button.setChecked(True)
+        self.off_button.setChecked(False)
+        self.window.update_logo(**update)
         self.update_mode_ui()
 
     def set_brightness(self, value):
         self.brightness_label.setText(f"{value}%")
-        self.window.status["barlicht_aussen"]["brightness"] = value
+        self.window.update_logo(on=True, brightness=value)
+        self.on_button.setChecked(True)
+        self.off_button.setChecked(False)
 
     def set_speed(self, value):
         self.speed_label.setText(f"{value}%")
-        self.window.status["barlicht_aussen"]["speed"] = value
+        self.window.update_logo(on=True, speed=value)
+        self.on_button.setChecked(True)
+        self.off_button.setChecked(False)
 
     def update_mode_ui(self):
         can_pick = self.current_mode in ("static", "pulse")
@@ -828,7 +848,8 @@ def main():
     app = QApplication(sys.argv)
     app.setStyleSheet(APP_STYLE)
     controller = create_lighting_controller()
-    window = MainWindow(controller)
+    logo_controller = create_logo_controller_from_env()
+    window = MainWindow(controller, logo_controller)
     if args.fullscreen:
         window.showFullScreen()
     else:
@@ -837,6 +858,7 @@ def main():
     try:
         return app.exec_()
     finally:
+        logo_controller.close()
         controller.close()
 
 
