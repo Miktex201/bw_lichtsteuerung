@@ -222,10 +222,10 @@ class MainWindow(QMainWindow):
             "barlicht_innen": {"on": False, "brightness": 100},
             "barlicht_aussen": {
                 "on": True,
-                "color": "#ff0000",
+                "color": "#ffffff",
                 "mode": "pulse",
                 "brightness": 100,
-                "speed": 50,
+                "speed": 5,
             },
             "barlichtdecke": {
                 "on": False,
@@ -263,6 +263,7 @@ class MainWindow(QMainWindow):
         for page in (self.home_page, self.inside_page, self.logo_page, self.ceiling_page, self.dmx_page):
             self.stack.addWidget(page)
 
+        self.apply_logo_status()
         self.show_home()
 
     def show_home(self):
@@ -367,8 +368,8 @@ class LogoPage(QWidget):
     def __init__(self, window):
         super().__init__()
         self.window = window
-        self.current_color = "#ff0000"
-        self.current_mode = "static"
+        self.current_color = "#ffffff"
+        self.current_mode = "pulse"
 
         layout = centered_panel(self)
         layout.addWidget(title_label("Bauwagenlogo"))
@@ -393,6 +394,7 @@ class LogoPage(QWidget):
         color_column.addWidget(section_label("Farbe waehlen"), alignment=Qt.AlignCenter)
         color_column.addWidget(subtitle_label("Aktiv bei Statisch und Pulsierend"), alignment=Qt.AlignCenter)
         self.wheel = ColorWheel()
+        self.wheel.set_color(self.current_color)
         self.wheel.colorChanged.connect(self.set_color)
         color_column.addWidget(self.wheel, alignment=Qt.AlignCenter)
         self.color_value = color_value_label(self.current_color)
@@ -407,16 +409,16 @@ class LogoPage(QWidget):
             (("static", "Statisch"), ("pulse", "Pulsierend"), ("fade", "Farbwechselnd")),
         )
         controls.addWidget(section_label("Helligkeit"), alignment=Qt.AlignCenter)
-        self.brightness = value_slider(0, 100, 50)
-        self.brightness_label = QLabel("50%")
+        self.brightness = value_slider(0, 100, 100)
+        self.brightness_label = QLabel("100%")
         self.brightness_label.setAlignment(Qt.AlignCenter)
         self.brightness.valueChanged.connect(self.set_brightness)
         controls.addWidget(self.brightness)
         controls.addWidget(self.brightness_label)
         self.speed_title = section_label("Geschwindigkeit")
         controls.addWidget(self.speed_title, alignment=Qt.AlignCenter)
-        self.speed = value_slider(1, 100, 50)
-        self.speed_label = QLabel("50%")
+        self.speed = value_slider(1, 100, 5)
+        self.speed_label = QLabel("5%")
         self.speed_label.setAlignment(Qt.AlignCenter)
         self.speed.valueChanged.connect(self.set_speed)
         controls.addWidget(self.speed)

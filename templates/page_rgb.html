@@ -14,7 +14,7 @@
             <p class="page-text">{{ subtitle }}</p>
 
             <div class="control-section">
-                <button class="control-button on-button">An</button>
+                <button class="control-button on-button active">An</button>
                 <button class="control-button off-button">Aus</button>
             </div>
 
@@ -30,28 +30,28 @@
                     </div>
                     <div class="selected-color-row">
                         <span id="selected-color-preview" class="selected-color-preview"></span>
-                        <span id="selected-color-value" class="selected-color-value">#ff0000 · RGB 255, 0, 0</span>
+                        <span id="selected-color-value" class="selected-color-value">#ffffff · RGB 255, 255, 255</span>
                     </div>
                 </section>
 
                 <section class="mode-section" aria-labelledby="mode-label">
                     <span id="mode-label" class="mode-label">Modus</span>
                     <div class="mode-buttons">
-                        <button class="mode-button active" data-mode="static">Statisch</button>
-                        <button class="mode-button" data-mode="pulse">Pulsierend</button>
+                        <button class="mode-button" data-mode="static">Statisch</button>
+                        <button class="mode-button active" data-mode="pulse">Pulsierend</button>
                         <button class="mode-button" data-mode="fade">Farbwechselnd</button>
                     </div>
 
                     <div class="dimmer-section rgb-dimmer-section">
                         <label for="rgb-dimmer-slider" class="dimmer-label">Helligkeit</label>
-                        <input type="range" id="rgb-dimmer-slider" min="0" max="100" value="50" class="dimmer-slider">
-                        <span id="rgb-dimmer-value" class="dimmer-value">50%</span>
+                        <input type="range" id="rgb-dimmer-slider" min="0" max="100" value="100" class="dimmer-slider">
+                        <span id="rgb-dimmer-value" class="dimmer-value">100%</span>
                     </div>
 
                     <div class="dimmer-section rgb-speed-section">
                         <label for="rgb-speed-slider" class="dimmer-label">Geschwindigkeit</label>
-                        <input type="range" id="rgb-speed-slider" min="1" max="100" value="50" class="dimmer-slider">
-                        <span id="rgb-speed-value" class="dimmer-value">50%</span>
+                        <input type="range" id="rgb-speed-slider" min="1" max="100" value="5" class="dimmer-slider">
+                        <span id="rgb-speed-value" class="dimmer-value">5%</span>
                     </div>
                 </section>
             </div>
@@ -79,8 +79,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const onButton = document.querySelector('.on-button');
     const offButton = document.querySelector('.off-button');
 
-    let currentMode = 'static';
-    let currentColor = '#ff0000';
+    let currentMode = 'pulse';
+    let currentColor = '#ffffff';
     let isDragging = false;
 
     function canPickColor() {
@@ -247,9 +247,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     drawColorWheel();
-    setSelectorPosition(238, 130);
+    setSelectorPosition(130, 130);
     updateSelectedColor(currentColor, false);
-    speedSection.setAttribute('aria-hidden', 'true');
+    speedSection.classList.toggle('is-visible', usesSpeed(currentMode));
+    speedSection.setAttribute('aria-hidden', !usesSpeed(currentMode));
 
     wheel.addEventListener('pointerdown', function(event) {
         isDragging = true;

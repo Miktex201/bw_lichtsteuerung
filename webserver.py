@@ -29,10 +29,10 @@ class SimpleWebServer:
             "barlicht_innen": {"on": False, "brightness": 100},
             "barlicht_aussen": {
                 "on": True,
-                "color": "#ff0000",
+                "color": "#ffffff",
                 "mode": "pulse",
                 "brightness": 100,
-                "speed": 50
+                "speed": 5
             },
             "barlichtdecke": {
                 "on": False,
@@ -46,6 +46,7 @@ class SimpleWebServer:
         self.manual_dmx_values = {channel: 0 for channel in range(1, 256)}
         self.manual_dmx_active = False
 
+        self._apply_device_status("barlicht_aussen")
         self._setup_routes()
 
     def _setup_routes(self):

@@ -58,6 +58,16 @@ http://<raspberry-ip>:8080
 
 Das Bauwagenlogo wird in der Website ueber die Seite `Bauwagenlogo` per GPIO-PWM gesteuert.
 
+Default beim Start:
+
+```text
+Bauwagenlogo: an
+Modus: Pulsierend
+Farbe: Weiss
+Helligkeit: 100 Prozent
+Geschwindigkeit: 5 Prozent
+```
+
 ## PyQt Start auf Raspberry Pi OS Lite
 
 Einmalig benoetigte Pakete:
