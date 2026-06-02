@@ -35,9 +35,19 @@ Falls die Schaltung invertiert reagiert:
 
 ## Website Start
 
+Python-venv fuer den Webserver:
+
 ```bash
 cd ~/bw_lichtsteuerung
-LICHT_DMX_ENABLED=1 LOGO_GPIO_ENABLED=1 /usr/bin/python3 main.py
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+```bash
+cd ~/bw_lichtsteuerung
+source venv/bin/activate
+LICHT_DMX_ENABLED=1 LOGO_GPIO_ENABLED=1 python main.py
 ```
 
 Danach im Browser:
@@ -56,6 +66,8 @@ Einmalig benoetigte Pakete:
 sudo apt install xserver-xorg xserver-xorg-legacy xinit openbox python3-pyqt5 python3-serial python3-rpi.gpio
 sudo sh -c 'printf "allowed_users=anybody\nneeds_root_rights=yes\n" > /etc/X11/Xwrapper.config'
 ```
+
+PyQt5 wird auf dem Raspberry Pi per `apt` installiert, nicht per `pip`. Darum steht `PyQt5` nicht in `requirements.txt`.
 
 Start per PuTTY/SSH:
 
