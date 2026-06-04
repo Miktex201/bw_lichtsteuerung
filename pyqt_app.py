@@ -25,6 +25,7 @@ try:
         QSizePolicy,
         QSlider,
         QStackedWidget,
+        QStyle,
         QVBoxLayout,
         QWidget,
     )
@@ -45,7 +46,7 @@ QPushButton {
     border: 1px solid rgba(255, 255, 255, 55);
     border-radius: 12px;
     padding: 8px 14px;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
 }
 QPushButton:hover {
@@ -92,15 +93,15 @@ QLineEdit {
     font-weight: 700;
 }
 QSlider::groove:horizontal {
-    height: 8px;
-    border-radius: 4px;
+    height: 14px;
+    border-radius: 7px;
     background: rgba(255, 255, 255, 50);
 }
 QSlider::handle:horizontal {
-    width: 36px;
-    height: 36px;
-    margin: -14px 0;
-    border-radius: 18px;
+    width: 46px;
+    height: 46px;
+    margin: -16px 0;
+    border-radius: 23px;
     background: #f8fafc;
 }
 """
@@ -118,7 +119,7 @@ class AppBackground(QWidget):
 
         if not self.logo.isNull():
             painter.setOpacity(0.10)
-            max_width = int(self.width() * 0.62)
+            max_width = int(self.width() * 0.86)
             scaled = self.logo.scaledToWidth(max_width, Qt.SmoothTransformation)
             x = (self.width() - scaled.width()) // 2
             y = (self.height() - scaled.height()) // 2
@@ -211,6 +212,45 @@ class ColorWheel(QWidget):
                 else:
                     image.setPixelColor(x, y, QColor(0, 0, 0, 0))
         return image
+
+
+class TouchSlider(QSlider):
+    def __init__(self, orientation, parent=None):
+        super().__init__(orientation, parent)
+        self.setTracking(True)
+        self.setSingleStep(1)
+        self.setPageStep(1)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._set_value_from_position(event.pos())
+            event.accept()
+            return
+
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() & Qt.LeftButton:
+            self._set_value_from_position(event.pos())
+            event.accept()
+            return
+
+        super().mouseMoveEvent(event)
+
+    def _set_value_from_position(self, position):
+        if self.orientation() != Qt.Horizontal:
+            return
+
+        width = max(1, self.width())
+        x = max(0, min(width, position.x()))
+        value = QStyle.sliderValueFromPosition(
+            self.minimum(),
+            self.maximum(),
+            x,
+            width,
+            self.invertedAppearance(),
+        )
+        self.setValue(value)
 
 
 class MainWindow(QMainWindow):
@@ -319,7 +359,7 @@ class HomePage(QWidget):
         button = QPushButton(text)
         button.setMinimumSize(0, 0)
         button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        button.setFont(QFont(button.font().family(), 24, QFont.Bold))
+        button.setFont(QFont(button.font().family(), 27, QFont.Bold))
         button.clicked.connect(lambda: self.window.stack.setCurrentWidget(page))
         layout.addWidget(button, 1)
 
@@ -499,10 +539,8 @@ class CeilingPage(QWidget):
         self.off_button.setChecked(True)
         self.on_button.clicked.connect(lambda: self.set_power(True))
         self.off_button.clicked.connect(lambda: self.set_power(False))
-        power_row.addStretch(1)
         power_row.addWidget(self.on_button)
         power_row.addWidget(self.off_button)
-        power_row.addStretch(1)
         layout.addLayout(power_row)
 
         body = QHBoxLayout()
@@ -554,9 +592,7 @@ class CeilingPage(QWidget):
         body.addLayout(controls)
 
         bottom = QHBoxLayout()
-        bottom.addStretch(1)
-        bottom.addWidget(back_button(window.show_home, "Zurueck zur Startseite"))
-        bottom.addStretch(1)
+        bottom.addWidget(back_button(window.show_home, "Zurueck zur Startseite"), 1)
         settings = QPushButton("DMX")
         settings.setFixedSize(48, 42)
         settings.clicked.connect(window.show_dmx)
@@ -756,6 +792,7 @@ def check_button(text):
     button = QPushButton(text)
     button.setCheckable(True)
     button.setMinimumHeight(42)
+    button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
     return button
 
 
@@ -763,12 +800,13 @@ def back_button(callback, text="Zurueck zur Startseite"):
     button = QPushButton(text)
     button.setMinimumWidth(190)
     button.setMinimumHeight(38)
+    button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
     button.clicked.connect(callback)
     return button
 
 
 def value_slider(minimum, maximum, value):
-    slider = QSlider(Qt.Horizontal)
+    slider = TouchSlider(Qt.Horizontal)
     slider.setRange(minimum, maximum)
     slider.setValue(value)
     slider.setMinimumWidth(210)
