@@ -101,14 +101,18 @@ class DmxLightingController:
             MovingHeadFixture("MovingHead 2", 17),
         ]
         self.moving_head_scenes = (
-            ((28, 70, 50), (228, 70, 66), 1.0),
-            ((70, 108, 42), (186, 108, 82), 1.0),
-            ((120, 42, 100), (136, 42, 116), 0.8),
-            ((186, 122, 66), (70, 122, 50), 1.0),
-            ((228, 84, 82), (28, 84, 42), 0.9),
-            ((128, 140, 130), (128, 28, 130), 1.2),
-            ((48, 52, 116), (208, 132, 100), 1.0),
-            ((208, 132, 27), (48, 52, 50), 1.0),
+            ((22, 46, 50), (234, 46, 66), 0.85, 0.35),
+            ((54, 132, 42), (202, 132, 82), 1.0, 0.25),
+            ((92, 178, 100), (164, 178, 116), 0.8, 0.55),
+            ((134, 96, 66), (122, 188, 50), 0.75, 0.2),
+            ((202, 154, 82), (54, 154, 42), 1.0, 0.35),
+            ((236, 198, 130), (20, 94, 130), 1.15, 0.45),
+            ((68, 214, 116), (188, 74, 100), 0.9, 0.6),
+            ((188, 74, 27), (68, 214, 50), 0.9, 0.25),
+            ((128, 222, 82), (128, 54, 116), 1.25, 0.75),
+            ((36, 126, 100), (220, 186, 66), 0.85, 0.35),
+            ((220, 186, 42), (36, 126, 130), 0.85, 0.35),
+            ((102, 232, 50), (154, 232, 82), 0.7, 0.7),
         )
         self.lightbar_channels = {
             channel
@@ -294,8 +298,10 @@ class DmxLightingController:
 
             scene = self.moving_head_scenes[moving_scene_index % len(self.moving_head_scenes)]
             next_scene = self.moving_head_scenes[(moving_scene_index + 1) % len(self.moving_head_scenes)]
-            scene_seconds = self._moving_head_scene_seconds(speed) * scene[2]
-            progress = (now - moving_scene_started) / scene_seconds
+            move_seconds = self._moving_head_scene_seconds(speed) * scene[2]
+            hold_seconds = self._moving_head_hold_seconds(speed) * scene[3]
+            elapsed = now - moving_scene_started
+            progress = 0 if elapsed < hold_seconds else (elapsed - hold_seconds) / move_seconds
 
             if progress >= 1:
                 moving_scene_index += 1
@@ -320,9 +326,17 @@ class DmxLightingController:
     def _moving_head_scene_seconds(speed):
         speed = max(0, min(100, int(speed)))
         if speed <= 50:
-            return 8.0 - speed * (4.5 / 50)
+            return 7.0 - speed * (4.0 / 50)
 
-        return 3.5 - (speed - 50) * (2.3 / 50)
+        return 3.0 - (speed - 50) * (1.9 / 50)
+
+    @staticmethod
+    def _moving_head_hold_seconds(speed):
+        speed = max(0, min(100, int(speed)))
+        if speed <= 50:
+            return 1.25 - speed * (0.45 / 50)
+
+        return 0.8 - (speed - 50) * (0.5 / 50)
 
     def _sleep_while_effect_running(self, seconds):
         end_time = time.monotonic() + seconds
