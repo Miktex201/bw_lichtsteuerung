@@ -707,21 +707,21 @@ body::before {
     .control-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 14px;
-        min-height: calc(100svh - 100px);
-        align-content: stretch;
+        gap: 12px;
+        min-height: 0;
+        align-content: start;
     }
 
     .big-button {
         max-width: none;
-        min-height: 0;
-        height: 100%;
-        padding: 18px 14px;
-        border-radius: 18px;
+        min-height: 112px;
+        height: auto;
+        padding: 18px 16px;
+        border-radius: 16px;
     }
 
     .button-title {
-        font-size: 24px;
+        font-size: 21px;
         line-height: 1.15;
     }
 
@@ -735,8 +735,8 @@ body::before {
     }
 
     .page-panel {
-        padding: 8px 0 78px;
-        gap: 16px;
+        padding: 8px 0 64px;
+        gap: 14px;
     }
 
     .control-section {
@@ -746,10 +746,10 @@ body::before {
     }
 
     .control-button {
-        min-height: 58px;
-        padding: 14px 12px;
-        font-size: 18px;
-        border-radius: 14px;
+        min-height: 50px;
+        padding: 11px 12px;
+        font-size: 16px;
+        border-radius: 12px;
     }
 
     .rgb-section {
@@ -773,11 +773,11 @@ body::before {
     .color-label,
     .mode-label,
     .dimmer-label {
-        font-size: 18px;
+        font-size: 16px;
     }
 
     .color-wheel-wrap {
-        width: min(78vw, 300px);
+        width: min(70vw, 260px);
     }
 
     .selected-color-row {
@@ -801,48 +801,49 @@ body::before {
     }
 
     .mode-button {
-        min-height: 56px;
-        padding: 14px 12px;
-        font-size: 17px;
+        min-height: 48px;
+        padding: 11px 12px;
+        font-size: 15px;
+        border-radius: 11px;
     }
 
     .dimmer-section {
-        gap: 14px;
-        margin-bottom: 12px;
+        gap: 12px;
+        margin-bottom: 10px;
         max-width: none;
     }
 
     .dimmer-slider {
-        height: 18px;
-        border-radius: 9px;
+        height: 14px;
+        border-radius: 7px;
     }
 
     .dimmer-slider::-webkit-slider-thumb {
-        width: 48px;
-        height: 48px;
+        width: 40px;
+        height: 40px;
     }
 
     .dimmer-slider::-moz-range-thumb {
-        width: 48px;
-        height: 48px;
+        width: 40px;
+        height: 40px;
     }
 
     .secondary-button {
         width: 100%;
         min-width: 0;
-        min-height: 52px;
-        padding: 14px 18px;
+        min-height: 46px;
+        padding: 12px 16px;
         box-sizing: border-box;
-        border-radius: 14px;
-        font-size: 16px;
+        border-radius: 12px;
+        font-size: 15px;
     }
 
     .settings-fab {
         right: 16px;
         bottom: 16px;
-        width: 56px;
-        height: 56px;
-        border-radius: 14px;
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
     }
 
     .dmx-panel {
@@ -856,16 +857,16 @@ body::before {
     }
 
     .dmx-arrow {
-        width: 54px;
-        height: 54px;
-        font-size: 34px;
-        border-radius: 14px;
+        width: 50px;
+        height: 50px;
+        font-size: 32px;
+        border-radius: 12px;
     }
 
     .dmx-range {
-        min-height: 54px;
-        font-size: 18px;
-        border-radius: 14px;
+        min-height: 50px;
+        font-size: 17px;
+        border-radius: 12px;
     }
 
     .dmx-controller {
@@ -874,10 +875,10 @@ body::before {
 
     .dmx-channel-row {
         grid-template-columns: 52px minmax(0, 1fr) 64px;
-        gap: 10px;
-        min-height: 72px;
-        padding: 10px;
-        border-radius: 14px;
+        gap: 9px;
+        min-height: 64px;
+        padding: 8px 9px;
+        border-radius: 12px;
     }
 
     .dmx-channel-label {
@@ -903,11 +904,11 @@ body::before {
     }
 
     .button-title {
-        font-size: 22px;
+        font-size: 20px;
     }
 
     .page-panel h1 {
-        font-size: 25px;
+        font-size: 24px;
     }
 
     .dmx-channel-row {
