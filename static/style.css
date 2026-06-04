@@ -121,6 +121,8 @@ body::before {
     flex-wrap: wrap;
     justify-content: center;
     gap: 24px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .page-grid {
@@ -594,6 +596,7 @@ body::before {
 
 .big-button {
     width: 100%;
+    box-sizing: border-box;
     min-height: 180px;
     padding: 26px 24px;
     display: flex;
@@ -616,6 +619,7 @@ body::before {
 .big-button {
     flex: 1 1 300px;
     max-width: 360px;
+    box-sizing: border-box;
     min-height: 180px;
     padding: 26px 24px;
     display: flex;
@@ -710,9 +714,12 @@ body::before {
         gap: 12px;
         min-height: 0;
         align-content: start;
+        width: 100%;
+        max-width: 100%;
     }
 
     .big-button {
+        width: 100%;
         max-width: none;
         min-height: 112px;
         height: auto;
@@ -726,7 +733,12 @@ body::before {
     }
 
     .logout-form {
+        width: 100%;
         margin-top: 14px;
+    }
+
+    .logout-button {
+        max-width: 100%;
     }
 
     .page-grid {
