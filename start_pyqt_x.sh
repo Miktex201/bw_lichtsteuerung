@@ -10,15 +10,5 @@ export LOGO_GPIO_ENABLED="${LOGO_GPIO_ENABLED:-1}"
 export LOGO_GPIO_RED="${LOGO_GPIO_RED:-18}"
 export LOGO_GPIO_GREEN="${LOGO_GPIO_GREEN:-10}"
 export LOGO_GPIO_BLUE="${LOGO_GPIO_BLUE:-17}"
-export PYQT_API_BASE="${PYQT_API_BASE:-http://127.0.0.1:8080}"
 
-PYQT_ARGS="--fullscreen"
-if [ "${PYQT_USE_WEBSERVER:-0}" = "1" ]; then
-    PYQT_ARGS="$PYQT_ARGS --use-webserver --api-base $PYQT_API_BASE"
-fi
-
-if [ "${PYQT_NICE:-0}" != "0" ]; then
-    exec nice -n "$PYQT_NICE" startx /usr/bin/python3 "$APP_DIR/pyqt_app.py" $PYQT_ARGS -- :0 vt2 -nocursor
-fi
-
-exec startx /usr/bin/python3 "$APP_DIR/pyqt_app.py" $PYQT_ARGS -- :0 vt2 -nocursor
+exec startx /usr/bin/python3 "$APP_DIR/pyqt_app.py" --fullscreen -- :0 vt2 -nocursor

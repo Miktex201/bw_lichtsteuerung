@@ -9,7 +9,7 @@ User=bw
 WorkingDirectory=/home/bw/bw_lichtsteuerung
 Environment=LICHT_DMX_ENABLED=1
 Environment=LICHT_DMX_DEVICE=/dev/ttyUSB0
-Environment=LICHT_DMX_FPS=30
+Environment=LICHT_DMX_FPS=44
 Environment=LOGO_GPIO_ENABLED=1
 Environment=LOGO_GPIO_RED=18
 Environment=LOGO_GPIO_GREEN=10
@@ -18,8 +18,6 @@ Environment=LOGO_GPIO_FREQUENCY=500
 ExecStart=/home/bw/bw_lichtsteuerung/venv/bin/python /home/bw/bw_lichtsteuerung/main.py
 Restart=always
 RestartSec=2
-Nice=10
-CPUWeight=40
 
 [Install]
 WantedBy=multi-user.target
