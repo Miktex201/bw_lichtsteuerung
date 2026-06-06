@@ -4,7 +4,7 @@ import time
 
 
 class DmxSerialDriver:
-    def __init__(self, device="/dev/ttyUSB0", channels=512, fps=44, enabled=None):
+    def __init__(self, device="/dev/ttyUSB1", channels=512, fps=44, enabled=None):
         self.device = device
         self.channels = channels
         self.fps = max(1, min(44, int(fps)))

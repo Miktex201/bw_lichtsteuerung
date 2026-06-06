@@ -866,7 +866,7 @@ def create_lighting_controller():
     if dmx_enabled is not None:
         dmx_enabled = dmx_enabled == "1"
 
-    default_device = "COM34" if os.name == "nt" else "/dev/ttyUSB0"
+    default_device = "COM34" if os.name == "nt" else "/dev/ttyUSB1"
     dmx_driver = DmxSerialDriver(
         device=os.environ.get("LICHT_DMX_DEVICE", default_device),
         fps=int(os.environ.get("LICHT_DMX_FPS", "44")),
