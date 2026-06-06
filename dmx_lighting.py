@@ -1,7 +1,8 @@
+import colorsys
 import threading
 import time
 
-from dmx_party_programs import PartyProgram, PROGRAM_SLOW_FADE
+from dmx_party_programs import PartyProgram
 
 
 class RgbFixture:
@@ -92,7 +93,7 @@ class DmxLightingController:
             RgbFixture("Lightbar 1", 33, 34, 35, 36, 37, 38, 39, 40),
             RgbFixture("Lightbar 2", 49, 50, 51, 52, 53, 54, 55, 56),
             RgbFixture("Lightbar 3", 65, 66, 67, 68, 69, 70, 71, 72),
-            RgbFixture("Lightbar 4", 81, 82, 83, 84, 85, 86, 87, 88),
+            RgbFixture("Lightbar 4", 82, 83, 84, 85, 86, 87, 88, 89),
             RgbFixture("Lightbar 5", 97, 98, 99, 100, 101, 102, 103, 104),
             RgbFixture("Lightbar 6", 113, 114, 115, 116, 117, 118, 119, 120),
         ]
@@ -161,9 +162,8 @@ class DmxLightingController:
             return
 
         if mode == "slow_fade":
-            self._stop_effect()
             self.set_moving_heads_blackout()
-            self.set_lightbars_program(PROGRAM_SLOW_FADE, status.get("speed", 50), brightness)
+            self._start_effect("slow_fade")
 
     def set_lightbars_rgb(self, red, green, blue, brightness=100):
         red = self._dmx_value(red)
@@ -206,6 +206,7 @@ class DmxLightingController:
         values = {}
         for index, fixture in enumerate(self.lightbars):
             program = stage.programs.get(index)
+            is_active = index in stage.active_indexes or program is not None
             if program is not None:
                 program = self._dmx_value(program)
                 values.update(fixture.program_values_for(
@@ -214,6 +215,11 @@ class DmxLightingController:
                     party_dimmer,
                     *active_rgb,
                     fade=fade
+                ))
+            elif is_active:
+                values.update(fixture.values_for(
+                    *active_rgb,
+                    party_dimmer
                 ))
             else:
                 values.update(fixture.values_for(*inactive_rgb, inactive_dimmer))
@@ -285,12 +291,20 @@ class DmxLightingController:
 
             speed = self._percent(status.get("speed", 50))
             brightness = status.get("brightness", 100)
+            now = time.monotonic()
 
             if mode != "party":
+                if mode == "slow_fade":
+                    cycle = self._slow_fade_cycle_seconds(speed)
+                    hue = (now / cycle) % 1.0
+                    red, green, blue = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
+                    self.set_lightbars_rgb(red * 255, green * 255, blue * 255, brightness)
+                    time.sleep(0.04)
+                    continue
+
                 time.sleep(0.05)
                 continue
 
-            now = time.monotonic()
             if now >= next_lightbar_stage_at:
                 stage = party_program.next_stage()
                 self.set_lightbar_program_chase_stage(stage, speed, brightness)
@@ -321,6 +335,14 @@ class DmxLightingController:
             return 10.0 - speed * (5.0 / 50)
 
         return 5.0 - (speed - 50) * (4.0 / 50)
+
+    @staticmethod
+    def _slow_fade_cycle_seconds(speed):
+        speed = max(0, min(100, int(speed)))
+        if speed <= 50:
+            return 24.0 - speed * (12.0 / 50)
+
+        return 12.0 - (speed - 50) * (8.0 / 50)
 
     @staticmethod
     def _moving_head_scene_seconds(speed):

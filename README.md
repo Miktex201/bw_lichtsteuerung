@@ -110,6 +110,45 @@ cd ~/bw_lichtsteuerung
 ./start_pyqt_from_ssh.sh
 ```
 
+Wenn Webserver und PyQt gleichzeitig laufen sollen, sollte PyQt auf dem Pi nur die Oberflaeche anzeigen und die Hardware ueber den Webserver steuern:
+
+```bash
+PYQT_USE_WEBSERVER=1 PYQT_API_BASE=http://127.0.0.1:8080 ./start_pyqt_from_ssh.sh
+```
+
+Autostart fuer Webserver und PyQt installieren:
+
+```bash
+cd ~/bw_lichtsteuerung
+chmod +x install_autostart.sh start_pyqt_x.sh start_pyqt_from_ssh.sh
+./install_autostart.sh
+sudo reboot
+```
+
+Dabei laeuft der Webserver mit niedrigerer Prioritaet und PyQt mit hoeherer Prioritaet.
+
+## Wenn der Bildschirm kurz schwarz wird
+
+Wenn beim Tippen kurz "Kein Signal" erscheint, ist das meistens kein normales PyQt-Layoutproblem, sondern HDMI/X11/Spannung:
+
+```bash
+journalctl -u bw-pyqt.service -n 80 --no-pager
+journalctl -u bw-web.service -n 80 --no-pager
+dmesg | grep -i -E "under-voltage|voltage|hdmi|drm|xorg"
+vcgencmd get_throttled
+```
+
+`vcgencmd get_throttled` sollte `throttled=0x0` zeigen. Wenn dort ein anderer Wert steht, gab es Unterspannung oder CPU-Drosselung.
+
+Hilfreiche Tests:
+
+```bash
+sudo systemctl stop bw-web.service
+./start_pyqt_from_ssh.sh
+```
+
+Wenn es ohne Webserver stabil ist, ist es Last oder ein Hardware-Zugriffskonflikt. Dann PyQt mit `PYQT_USE_WEBSERVER=1` verwenden.
+
 ## Wichtige Umgebungsvariablen
 
 DMX:

@@ -1,8 +1,12 @@
 import argparse
 import colorsys
+import json
 import math
 import os
 import sys
+import threading
+import urllib.error
+import urllib.request
 
 from dmx_driver import DmxSerialDriver
 from dmx_lighting import DmxLightingController
@@ -111,6 +115,8 @@ class AppBackground(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.logo = QPixmap(find_logo_path())
+        self.cached_logo = QPixmap()
+        self.cached_logo_width = 0
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -120,10 +126,12 @@ class AppBackground(QWidget):
         if not self.logo.isNull():
             painter.setOpacity(0.10)
             max_width = int(self.width() * 0.86)
-            scaled = self.logo.scaledToWidth(max_width, Qt.SmoothTransformation)
-            x = (self.width() - scaled.width()) // 2
-            y = (self.height() - scaled.height()) // 2
-            painter.drawPixmap(x, y, scaled)
+            if self.cached_logo_width != max_width:
+                self.cached_logo = self.logo.scaledToWidth(max_width, Qt.FastTransformation)
+                self.cached_logo_width = max_width
+            x = (self.width() - self.cached_logo.width()) // 2
+            y = (self.height() - self.cached_logo.height()) // 2
+            painter.drawPixmap(x, y, self.cached_logo)
             painter.setOpacity(1.0)
 
         super().paintEvent(event)
@@ -253,11 +261,47 @@ class TouchSlider(QSlider):
         self.setValue(value)
 
 
+class WebApiClient:
+    def __init__(self, base_url):
+        self.base_url = base_url.rstrip("/")
+
+    def post_status(self, device, updates):
+        self._post_async(f"/status/{device}", updates)
+
+    def set_manual_channel(self, channel, value):
+        self._post_async("/dmx/manual", {"channels": {str(channel): int(value)}})
+
+    def set_manual_active(self, active):
+        self._post_async("/dmx/manual/control", {"active": bool(active)})
+
+    def _post_async(self, path, payload):
+        thread = threading.Thread(
+            target=self._post,
+            args=(path, payload),
+            daemon=True,
+        )
+        thread.start()
+
+    def _post(self, path, payload):
+        data = json.dumps(payload).encode("utf-8")
+        request = urllib.request.Request(
+            self.base_url + path,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            urllib.request.urlopen(request, timeout=0.5).read()
+        except (OSError, urllib.error.URLError):
+            pass
+
+
 class MainWindow(QMainWindow):
-    def __init__(self, lighting_controller, logo_controller=None):
+    def __init__(self, lighting_controller=None, logo_controller=None, api_client=None):
         super().__init__()
         self.lighting_controller = lighting_controller
         self.logo_controller = logo_controller
+        self.api_client = api_client
         self.status = {
             "barlicht_innen": {"on": False, "brightness": 100},
             "barlicht_aussen": {
@@ -310,22 +354,31 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentWidget(self.home_page)
 
     def show_dmx(self):
+        if self.api_client:
+            self.api_client.set_manual_active(True)
         self.dmx_page.enter_page()
         self.stack.setCurrentWidget(self.dmx_page)
 
     def leave_dmx(self):
+        if self.api_client:
+            self.api_client.set_manual_active(False)
         self.apply_ceiling_status()
         self.stack.setCurrentWidget(self.ceiling_page)
 
     def apply_ceiling_status(self):
-        self.lighting_controller.apply_ceiling_status(self.status["barlichtdecke"])
+        if self.api_client:
+            self.api_client.post_status("barlichtdecke", self.status["barlichtdecke"])
+        elif self.lighting_controller:
+            self.lighting_controller.apply_ceiling_status(self.status["barlichtdecke"])
 
     def update_ceiling(self, **updates):
         self.status["barlichtdecke"].update(updates)
         self.apply_ceiling_status()
 
     def apply_logo_status(self):
-        if self.logo_controller:
+        if self.api_client:
+            self.api_client.post_status("barlicht_aussen", self.status["barlicht_aussen"])
+        elif self.logo_controller:
             self.logo_controller.apply_status(self.status["barlicht_aussen"])
 
     def update_logo(self, **updates):
@@ -336,7 +389,10 @@ class MainWindow(QMainWindow):
         channel = max(1, min(255, int(channel)))
         value = max(0, min(255, int(value)))
         self.manual_dmx_values[channel] = value
-        self.lighting_controller.set_manual_channels({channel: value})
+        if self.api_client:
+            self.api_client.set_manual_channel(channel, value)
+        elif self.lighting_controller:
+            self.lighting_controller.set_manual_channels({channel: value})
 
 
 class HomePage(QWidget):
@@ -880,6 +936,17 @@ def create_lighting_controller():
 def parse_args():
     parser = argparse.ArgumentParser(description="Native PyQt Oberflaeche fuer die DMX Lichtsteuerung")
     parser.add_argument("--fullscreen", action="store_true", help="im Vollbild starten")
+    parser.add_argument(
+        "--api-base",
+        default=os.environ.get("PYQT_API_BASE", "http://127.0.0.1:8080"),
+        help="Webserver-Adresse fuer den API-Modus",
+    )
+    parser.add_argument(
+        "--use-webserver",
+        action="store_true",
+        default=os.environ.get("PYQT_USE_WEBSERVER", "0") == "1",
+        help="PyQt steuert ueber den laufenden Webserver statt direkt ueber DMX/GPIO",
+    )
     return parser.parse_args()
 
 
@@ -887,9 +954,18 @@ def main():
     args = parse_args()
     app = QApplication(sys.argv)
     app.setStyleSheet(APP_STYLE)
-    controller = create_lighting_controller()
-    logo_controller = create_logo_controller_from_env()
-    window = MainWindow(controller, logo_controller)
+    controller = None
+    logo_controller = None
+    api_client = None
+
+    if args.use_webserver:
+        api_client = WebApiClient(args.api_base)
+        print(f"PyQt nutzt Webserver-API: {args.api_base}")
+    else:
+        controller = create_lighting_controller()
+        logo_controller = create_logo_controller_from_env()
+
+    window = MainWindow(controller, logo_controller, api_client)
     if args.fullscreen:
         window.showFullScreen()
     else:
@@ -898,8 +974,10 @@ def main():
     try:
         return app.exec_()
     finally:
-        logo_controller.close()
-        controller.close()
+        if logo_controller:
+            logo_controller.close()
+        if controller:
+            controller.close()
 
 
 if __name__ == "__main__":

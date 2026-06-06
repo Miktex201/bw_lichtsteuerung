@@ -38,6 +38,29 @@ class PwmChannel:
         return 100 - percent if self.inverted else percent
 
 
+class DirectChannel:
+    def __init__(self, gpio, pin, inverted=False):
+        self.gpio = gpio
+        self.pin = pin
+        self.inverted = inverted
+        self.set_percent(0)
+
+    def set_percent(self, percent):
+        is_on = float(percent) > 0
+        if self.inverted:
+            is_on = not is_on
+        self.gpio.output(self.pin, self.gpio.HIGH if is_on else self.gpio.LOW)
+
+    def stop(self):
+        self.set_percent(0)
+
+
+def create_channel(gpio, pin, args):
+    if args.direct:
+        return DirectChannel(gpio, pin, args.inverted)
+    return PwmChannel(gpio, pin, args.frequency, args.inverted)
+
+
 def setup_gpio(gpio, pins):
     gpio.setmode(gpio.BCM)
     gpio.setwarnings(False)
@@ -52,7 +75,7 @@ def sleep_step(seconds):
 def run_single_pin_test(args):
     gpio = import_gpio()
     setup_gpio(gpio, (args.pin,))
-    channel = PwmChannel(gpio, args.pin, args.frequency, args.inverted)
+    channel = create_channel(gpio, args.pin, args)
 
     try:
         for percent, seconds in ((100, args.hold), (50, args.hold), (0, args.off_hold)):
@@ -69,9 +92,9 @@ def run_rgb_test(args):
     red_pin, green_pin, blue_pin = args.rgb
     setup_gpio(gpio, args.rgb)
     channels = {
-        "Rot": PwmChannel(gpio, red_pin, args.frequency, args.inverted),
-        "Gruen": PwmChannel(gpio, green_pin, args.frequency, args.inverted),
-        "Blau": PwmChannel(gpio, blue_pin, args.frequency, args.inverted),
+        "Rot": create_channel(gpio, red_pin, args),
+        "Gruen": create_channel(gpio, green_pin, args),
+        "Blau": create_channel(gpio, blue_pin, args),
     }
 
     steps = (
@@ -138,6 +161,11 @@ def parse_args():
         "--inverted",
         action="store_true",
         help="Duty-Cycle invertieren, falls deine Schaltung aktiv-low ist",
+    )
+    parser.add_argument(
+        "--direct",
+        action="store_true",
+        help="ohne PWM testen: GPIO nur dauerhaft an oder aus schalten",
     )
     return parser.parse_args()
 
