@@ -4,9 +4,8 @@
 
 Falls der Raspberry Pi kein WLAN findet, kann ein Handy-Hotspot mit folgenden Daten geöffnet werden:
 
-SSID: NichtOeffentlich
-Passwort: BauwagaRenga2016Tex
-
+SSID: mulle
+Passwort: ******15
 Der Raspberry Pi verbindet sich automatisch damit, sobald der Hotspot verfügbar ist.
 
 SSH-Zugriff dann über die im Handy angezeigte IP-Adresse:
