@@ -1,12 +1,14 @@
 [Unit]
 Description=Bauwagen Lichtsteuerung PyQt Touchoberflaeche
-After=bw-web.service
-Requires=bw-web.service
+After=bw-web.service systemd-user-sessions.service
+Wants=bw-web.service
 
 [Service]
 Type=simple
 User=bw
 WorkingDirectory=/home/bw/bw_lichtsteuerung
+Environment=PYQT_USE_WEBSERVER=1
+Environment=PYQT_API_BASE=http://127.0.0.1:8080
 StandardInput=tty
 TTYPath=/dev/tty2
 ExecStart=/home/bw/bw_lichtsteuerung/start_pyqt_x.sh

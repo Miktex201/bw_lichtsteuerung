@@ -8,7 +8,7 @@ Type=simple
 User=bw
 WorkingDirectory=/home/bw/bw_lichtsteuerung
 Environment=LICHT_DMX_ENABLED=1
-Environment=LICHT_DMX_DEVICE=/dev/ttyUSB1
+Environment=LICHT_DMX_DEVICE=/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_BG00QFIM-if00-port0
 Environment=LICHT_DMX_FPS=44
 Environment=LOGO_GPIO_ENABLED=1
 Environment=LOGO_GPIO_RED=18
