@@ -78,7 +78,7 @@ Bauwagenlogo: an
 Modus: Pulsierend
 Farbe: Weiss
 Helligkeit: 100 Prozent
-Geschwindigkeit: 5 Prozent
+Geschwindigkeit: 35 Prozent
 ```
 
 ## PyQt Start auf Raspberry Pi OS Lite

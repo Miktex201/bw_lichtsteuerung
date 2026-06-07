@@ -300,7 +300,7 @@ class MainWindow(QMainWindow):
                 "color": "#ffffff",
                 "mode": "pulse",
                 "brightness": 100,
-                "speed": 5,
+                "speed": 35,
             },
             "barlichtdecke": {
                 "on": False,
@@ -504,8 +504,8 @@ class LogoPage(QWidget):
         controls.addWidget(self.brightness_label)
         self.speed_title = section_label("Geschwindigkeit")
         controls.addWidget(self.speed_title, alignment=Qt.AlignCenter)
-        self.speed = value_slider(1, 100, 5)
-        self.speed_label = QLabel("5%")
+        self.speed = value_slider(1, 100, 35)
+        self.speed_label = QLabel("35%")
         self.speed_label.setAlignment(Qt.AlignCenter)
         self.speed.valueChanged.connect(self.set_speed)
         controls.addWidget(self.speed)

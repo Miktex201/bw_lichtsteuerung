@@ -32,7 +32,7 @@ class SimpleWebServer:
                 "color": "#ffffff",
                 "mode": "pulse",
                 "brightness": 100,
-                "speed": 5
+                "speed": 35
             },
             "barlichtdecke": {
                 "on": False,

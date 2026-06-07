@@ -91,9 +91,9 @@ class DmxLightingController:
         6: 21,
         7: 255,
         8: 255,
-        17: 154,
+        17: 151,
         18: 0,
-        19: 56,
+        19: 51,
         20: 0,
         21: 55,
         22: 21,
@@ -179,7 +179,7 @@ class DmxLightingController:
             return
 
         if mode == "slow_fade":
-            self.set_moving_heads_blackout()
+            self.set_moving_heads_static_target()
             self._start_effect("slow_fade")
 
     def set_lightbars_rgb(self, red, green, blue, brightness=100):
@@ -356,9 +356,9 @@ class DmxLightingController:
     def _party_chase_step_seconds(speed):
         speed = max(0, min(100, int(speed)))
         if speed <= 50:
-            return 10.0 - speed * (5.0 / 50)
+            return 1.4 - speed * (0.95 / 50)
 
-        return 5.0 - (speed - 50) * (4.0 / 50)
+        return 0.45 - (speed - 50) * (0.31 / 50)
 
     @staticmethod
     def _slow_fade_cycle_seconds(speed):
