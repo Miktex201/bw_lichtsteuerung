@@ -15,6 +15,7 @@ Environment=LOGO_GPIO_RED=18
 Environment=LOGO_GPIO_GREEN=10
 Environment=LOGO_GPIO_BLUE=17
 Environment=LOGO_GPIO_FREQUENCY=500
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 20); do [ -e "$LICHT_DMX_DEVICE" ] && exit 0; sleep 1; done; echo "DMX device $LICHT_DMX_DEVICE nicht gefunden"; exit 1'
 ExecStart=/home/bw/bw_lichtsteuerung/venv/bin/python /home/bw/bw_lichtsteuerung/main.py
 Restart=always
 RestartSec=2

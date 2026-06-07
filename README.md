@@ -119,6 +119,8 @@ LICHT_DMX_DEVICE=/dev/ttyUSB1
 LICHT_DMX_FPS=44
 ```
 
+Der Autostart-Webservice wartet beim Booten kurz auf `LICHT_DMX_DEVICE`, damit der USB-DMX-Adapter am Hub Zeit hat, als `/dev/ttyUSB1` aufzutauchen.
+
 Bauwagenlogo:
 
 ```bash

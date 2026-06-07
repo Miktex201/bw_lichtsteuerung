@@ -4,7 +4,7 @@ set -eu
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 export LICHT_DMX_ENABLED="${LICHT_DMX_ENABLED:-1}"
-export LICHT_DMX_DEVICE="${LICHT_DMX_DEVICE:-/dev/ttyUSB0}"
+export LICHT_DMX_DEVICE="${LICHT_DMX_DEVICE:-/dev/ttyUSB1}"
 export LICHT_DMX_FPS="${LICHT_DMX_FPS:-44}"
 export LOGO_GPIO_ENABLED="${LOGO_GPIO_ENABLED:-1}"
 export LOGO_GPIO_RED="${LOGO_GPIO_RED:-18}"
