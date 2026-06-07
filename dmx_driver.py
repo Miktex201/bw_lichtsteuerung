@@ -3,8 +3,15 @@ import threading
 import time
 
 
+DEFAULT_DEVICE = (
+    "COM34"
+    if os.name == "nt"
+    else "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_BG00QFIM-if00-port0"
+)
+
+
 class DmxSerialDriver:
-    def __init__(self, device="/dev/ttyUSB1", channels=512, fps=44, enabled=None):
+    def __init__(self, device=DEFAULT_DEVICE, channels=512, fps=44, enabled=None):
         self.device = device
         self.channels = channels
         self.fps = max(1, min(44, int(fps)))

@@ -22,7 +22,11 @@ if __name__ == "__main__":
     if dmx_enabled is not None:
         dmx_enabled = dmx_enabled == "1"
 
-    default_device = "COM34" if os.name == "nt" else "/dev/ttyUSB0"
+    default_device = (
+        "COM34"
+        if os.name == "nt"
+        else "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_BG00QFIM-if00-port0"
+    )
     dmx_driver = DmxSerialDriver(
         device=os.environ.get("LICHT_DMX_DEVICE", default_device),
         fps=int(os.environ.get("LICHT_DMX_FPS", "44")),
