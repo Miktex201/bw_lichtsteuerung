@@ -142,9 +142,7 @@ class DmxLightingController:
             self.ceiling_status = dict(status)
 
         if not status.get("on"):
-            self._stop_effect()
-            self.set_lightbars_rgb(0, 0, 0, 0)
-            self.set_moving_heads_blackout()
+            self.blackout_all()
             return
 
         mode = status.get("mode", "static")
@@ -252,6 +250,10 @@ class DmxLightingController:
     def set_manual_channels(self, values):
         self._stop_effect()
         self.driver.set_channels(values)
+
+    def blackout_all(self):
+        self._stop_effect()
+        self.driver.blackout()
 
     def _start_effect(self, mode):
         with self.lock:

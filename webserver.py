@@ -165,6 +165,9 @@ class SimpleWebServer:
                 if key in allowed_keys:
                     self.status[device][key] = value
 
+            if device == "barlichtdecke" and not self.status[device].get("on"):
+                self._clear_manual_dmx_values()
+
             self._apply_device_status(device)
 
             return jsonify(self.status[device])
@@ -225,6 +228,10 @@ class SimpleWebServer:
 
         if not active:
             self._apply_device_status("barlichtdecke")
+
+    def _clear_manual_dmx_values(self):
+        for channel in self.manual_dmx_values:
+            self.manual_dmx_values[channel] = 0
 
     def start(self):
         print(f"Server läuft auf http://{self.host}:{self.port}")
