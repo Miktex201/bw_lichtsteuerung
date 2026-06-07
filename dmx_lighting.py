@@ -82,6 +82,25 @@ class MovingHeadFixture:
 
 
 class DmxLightingController:
+    STATIC_MOVING_HEAD_VALUES = {
+        1: 22,
+        2: 0,
+        3: 52,
+        4: 55,
+        5: 59,
+        6: 21,
+        7: 255,
+        8: 255,
+        17: 154,
+        18: 0,
+        19: 56,
+        20: 0,
+        21: 55,
+        22: 21,
+        23: 255,
+        24: 255,
+    }
+
     def __init__(self, driver):
         self.driver = driver
         self.lock = threading.Lock()
@@ -150,7 +169,7 @@ class DmxLightingController:
 
         if mode == "static":
             self._stop_effect()
-            self.set_moving_heads_blackout()
+            self.set_moving_heads_static_target()
             red, green, blue = self._hex_to_rgb(status.get("color", "#ff0000"))
             self.set_lightbars_rgb(red, green, blue, brightness)
             return
@@ -246,6 +265,9 @@ class DmxLightingController:
             })
 
         self.driver.set_channels(values)
+
+    def set_moving_heads_static_target(self):
+        self.driver.set_channels(self.STATIC_MOVING_HEAD_VALUES)
 
     def set_manual_channels(self, values):
         self._stop_effect()
