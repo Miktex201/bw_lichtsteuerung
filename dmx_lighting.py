@@ -83,7 +83,7 @@ class MovingHeadFixture:
 
 class DmxLightingController:
     STATIC_MOVING_HEAD_VALUES = {
-        1: 22,
+        1: 11,
         2: 0,
         3: 52,
         4: 55,
